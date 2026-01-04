@@ -40,7 +40,7 @@ from modules import (
     XSSScanner,
     XXEScanner,
 )
-from modules.llm_analyzer import get_analyzer
+from modules.ai.analyzer import get_ai_analyzer as get_analyzer
 from reporting import ReportGenerator, RiskCalculator
 
 # Suppress SSL warnings (placed after imports to satisfy E402)
