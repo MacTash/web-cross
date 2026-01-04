@@ -1,0 +1,58 @@
+# IDOR (Insecure Direct Object Reference) Test Values
+# Used for testing broken access control
+
+# Numeric IDs
+0
+1
+2
+100
+1000
+999999
+2147483647
+-1
+
+# Common admin user IDs
+admin
+root
+administrator
+system
+superuser
+
+# UUID variations
+00000000-0000-0000-0000-000000000000
+00000000-0000-0000-0000-000000000001
+ffffffff-ffff-ffff-ffff-ffffffffffff
+11111111-1111-1111-1111-111111111111
+
+# MongoDB ObjectID patterns
+000000000000000000000000
+000000000000000000000001
+ffffffffffffffffffffffff
+507f1f77bcf86cd799439011
+
+# Base64 encoded IDs
+YWRtaW4=
+cm9vdA==
+dGVzdA==
+
+# Hash-like patterns
+d41d8cd98f00b204e9800998ecf8427e
+da39a3ee5e6b4b0d3255bfef95601890afd80709
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+# Email-based IDs
+admin@example.com
+test@test.com
+user@domain.com
+
+# Path traversal in IDs
+../admin
+..%2fadmin
+%2e%2e/admin
+
+# Special characters
+*
+%00
+null
+undefined
+NaN

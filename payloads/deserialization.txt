@@ -1,0 +1,51 @@
+# Insecure Deserialization Payloads
+# Format: type|payload|technique
+# Types: java, php, python, dotnet
+
+# PHP Serialization
+php|O:8:"stdClass":0:{}|basic_object
+php|a:1:{s:4:"test";s:4:"data";}|basic_array
+php|O:7:"Example":1:{s:4:"data";s:4:"test";}|custom_class
+php|O:8:"SplStack":0:{}|spl_stack
+php|O:12:"DateInterval":1:{s:1:"y";i:1;}|date_interval
+php|a:2:{i:0;O:8:"stdClass":0:{}i:1;s:4:"test";}|nested_object
+php|s:20:"test serialized data";|string_only
+php|i:12345;|integer_only
+php|b:1;|boolean_true
+php|N;|null_value
+php|d:3.14159;|float_value
+
+# PHP Object Injection patterns (for detection)
+php|O:*:"*__destruct*|destruct_gadget
+php|O:*:"*__wakeup*|wakeup_gadget
+php|O:*:"*__toString*|tostring_gadget
+
+# Java detection patterns (base64 encoded prefixes)
+java|rO0ABX|standard_java
+java|H4sIAAAA|gzip_java
+java|aced0005|hex_magic
+
+# Python Pickle detection patterns
+python|cos\nsystem|os_system
+python|cposix\nsystem|posix_system
+python|c__builtin__\neval|builtin_eval
+python|cbuiltins\nexec|builtins_exec
+
+# .NET ViewState patterns
+dotnet|__VIEWSTATE=|viewstate_field
+dotnet|__VIEWSTATEGENERATOR=|viewstate_generator
+dotnet|__EVENTVALIDATION=|event_validation
+
+# JSON deserialization (detection patterns)
+json|{"__type":"*"|dotnet_type
+json|{"$type":"*"|newtonsoft_type
+json|{"@type":"*"|fastjson_type
+json|{"class":"*"|jackson_type
+
+# YAML deserialization (detection patterns)
+yaml|!!python/object|python_object
+yaml|!!ruby/object|ruby_object
+yaml|tag:yaml.org|yaml_tag
+
+# XML External Entity for deserialization context
+xml|<!ENTITY xxe SYSTEM|xxe_in_deser

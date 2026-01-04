@@ -1,0 +1,102 @@
+# ============================================
+# Web-Cross v3.0 Configuration
+# ============================================
+# Override settings here or via environment variables
+# Environment variables use prefix WEBCROSS_ and nested delimiter __
+# Example: WEBCROSS_AI__GROQ_API_KEY=your-key
+
+version: "3.0"
+log_level: INFO
+
+# ============================================
+# Scanner Settings
+# ============================================
+scanner:
+  timeout: 10
+  threads: 10
+  max_depth: 3
+  max_urls: 100
+  user_agent: "WebCross-Scanner/3.0 (Security Testing)"
+  follow_redirects: true
+  verify_ssl: true
+  
+  # Rate limiting (requests per second)
+  rate_limit_requests: 10
+  rate_limit_burst: 20
+  
+  # Scope limiting (leave empty to allow all)
+  scope_include: []
+  scope_exclude: []
+  
+  # Default scan mode: full, quick, core, advanced, recon
+  default_mode: full
+
+# ============================================
+# AI/LLM Settings
+# ============================================
+ai:
+  # Provider: ollama (local), groq (cloud), auto (try groq first)
+  provider: auto
+  
+  # Ollama configuration (local)
+  ollama_host: "http://localhost:11434"
+  ollama_model: "llama3.2:3b"
+  
+  # Groq configuration (cloud - fast inference)
+  # Set via environment: WEBCROSS_AI__GROQ_API_KEY
+  groq_api_key: null
+  groq_model: "llama-3.3-70b-versatile"
+  
+  # Generation settings
+  temperature: 0.3
+  max_tokens: 2048
+  timeout: 60
+  
+  # AI Features
+  enable_payload_mutation: true
+  enable_chain_analysis: true
+  enable_natural_reports: true
+
+# ============================================
+# Database Settings
+# ============================================
+database:
+  enabled: true
+  # SQLite by default, change to PostgreSQL for larger deployments
+  # url: "postgresql://user:pass@localhost/webcross"
+  echo: false
+  
+  # History retention
+  max_history_days: 90
+  auto_cleanup: true
+
+# ============================================
+# Reporting Settings
+# ============================================
+reporting:
+  # Default format: html, json, text, pdf, all
+  default_format: html
+  
+  # PDF generation
+  pdf_enabled: true
+  
+  # Compliance mapping
+  include_owasp: true
+  include_cwe: true
+  include_cvss: true
+  
+  # Historical trends
+  enable_trends: true
+
+# ============================================
+# Web Server Settings
+# ============================================
+server:
+  host: "127.0.0.1"
+  port: 5000
+  debug: false
+  
+  # Authentication (set secret_key in production!)
+  auth_enabled: false
+  secret_key: "change-me-in-production"
+  session_lifetime_hours: 24

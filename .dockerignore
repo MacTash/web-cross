@@ -1,0 +1,49 @@
+# Files to exclude from Docker build
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+.venv
+*.egg-info
+.git
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test files
+tests/
+.pytest_cache
+.coverage
+htmlcov/
+.tox
+
+# Local data
+data/
+reports/
+*.db
+*.sqlite
+*.log
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Misc
+*.bak
+*~

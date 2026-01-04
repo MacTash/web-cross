@@ -1,0 +1,49 @@
+# Docker Compose for Web-Cross Scanner
+
+services:
+  webcross:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: webcross-scanner
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - WEBCROSS_LOG_LEVEL=INFO
+      - WEBCROSS_SERVER__HOST=0.0.0.0
+      - WEBCROSS_SERVER__PORT=5000
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+    restart: unless-stopped
+    networks:
+      - webcross-network
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Ollama for local AI
+  ollama:
+    image: ollama/ollama:latest
+    container_name: webcross-ollama
+    profiles:
+      - ai-local
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - webcross-network
+    restart: unless-stopped
+
+networks:
+  webcross-network:
+    driver: bridge
+
+volumes:
+  ollama-data:
