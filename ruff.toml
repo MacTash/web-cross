@@ -1,28 +1,29 @@
 # Web-Cross Ruff Configuration
-# Modern Python linter (replacement for flake8, isort, etc.)
+# Modern Python linter
 
-[tool.ruff]
 target-version = "py311"
 line-length = 100
+
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # Pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
-]
-ignore = [
-    "E501",  # line too long (handled by formatter)
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-    "W191",  # indentation contains tabs
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "C4",
+    "UP",
 ]
 
-[tool.ruff.per-file-ignores]
+ignore = [
+    "E501",
+    "B008",
+    "C901",
+    "W191",
+]
+
+[per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/*" = ["S101", "S102", "S105", "S106"]
 
-[tool.ruff.isort]
+[isort]
 known-first-party = ["modules", "core", "reporting", "utils", "database"]
