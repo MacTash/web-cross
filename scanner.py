@@ -54,12 +54,15 @@ class WebCrossScanner:
     """Main scanner orchestrator"""
 
     def __init__(self, target_url: str, timeout: int = 10,
-                 scan_mode: str = "full", threads: int = 10, use_ai: bool = False):
+                 scan_mode: str = "full", threads: int = 10, use_ai: bool = False,
+                 ai_provider: str = "auto", ai_api_key: str = None):
         self.target_url = target_url
         self.timeout = timeout
         self.scan_mode = scan_mode
         self.threads = threads
         self.use_ai = use_ai
+        self.ai_provider = ai_provider
+        self.ai_api_key = ai_api_key
         self.user_agent = f"WebCross-Scanner/{VERSION}"
         self.findings = []
         self.forms = []
@@ -69,10 +72,22 @@ class WebCrossScanner:
         # Initialize LLM analyzer if AI mode enabled
         self.llm = None
         if use_ai:
-            self.llm = get_analyzer()
+            # Determine provider and API key
+            provider_kwargs = {"provider": ai_provider}
+            if ai_api_key:
+                if ai_provider == "anthropic" or ai_api_key.startswith("sk-ant-"):
+                    provider_kwargs["anthropic_api_key"] = ai_api_key
+                    provider_kwargs["provider"] = "anthropic"
+                elif ai_provider == "groq" or ai_api_key.startswith("gsk_"):
+                    provider_kwargs["groq_api_key"] = ai_api_key
+                    provider_kwargs["provider"] = "groq"
+
+            self.llm = get_analyzer(**provider_kwargs)
             if not self.llm.is_available():
-                print("⚠️ AI mode requested but Ollama not available. Continuing without AI.")
+                print(f"⚠️ AI mode requested but {ai_provider} not available. Continuing without AI.")
                 self.llm = None
+            else:
+                print(f"✓ AI provider: {self.llm.active_provider_name}")
 
         # Initialize all scanners
         self.scanners = {
@@ -428,7 +443,10 @@ Examples:
     parser.add_argument('--server', action='store_true', help='Start web server')
     parser.add_argument('--port', type=int, default=5000, help='Server port')
     parser.add_argument('--clean', action='store_true', help='Clean pycache, .pyc, and old reports')
-    parser.add_argument('--ai', action='store_true', help='Enable AI-powered analysis (Ollama)')
+    parser.add_argument('--ai', action='store_true', help='Enable AI-powered analysis')
+    parser.add_argument('--ai-provider', choices=['auto', 'anthropic', 'groq', 'ollama'],
+                       default='auto', help='AI provider (default: auto)')
+    parser.add_argument('--ai-key', help='API key for cloud AI provider (Anthropic or Groq)')
 
     args = parser.parse_args()
 
@@ -492,10 +510,19 @@ Examples:
     console.print(f"\n[cyan]Target:[/cyan] {args.url}")
     console.print(f"[cyan]Mode:[/cyan] {args.mode}")
     if args.ai:
-        console.print("[cyan]AI Mode:[/cyan] Enabled (llama3.2:3b)")
+        provider_info = args.ai_provider
+        if args.ai_key:
+            if args.ai_key.startswith("sk-ant-"):
+                provider_info = "anthropic (Claude)"
+            elif args.ai_key.startswith("gsk_"):
+                provider_info = "groq"
+        console.print(f"[cyan]AI Mode:[/cyan] Enabled ({provider_info})")
     console.print()
 
-    scanner = WebCrossScanner(args.url, args.timeout, args.mode, args.threads, use_ai=args.ai)
+    scanner = WebCrossScanner(
+        args.url, args.timeout, args.mode, args.threads,
+        use_ai=args.ai, ai_provider=args.ai_provider, ai_api_key=args.ai_key
+    )
     findings = scanner.run_full_scan()
 
     duration = time.time() - start_time

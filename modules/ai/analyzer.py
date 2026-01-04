@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .providers import GenerationResult
+from .providers.anthropic_provider import get_anthropic_provider
 from .providers.groq_provider import get_groq_provider
 from .providers.ollama_provider import get_ollama_provider
 
@@ -29,6 +30,7 @@ class AIAnalyzer:
     Multi-provider AI analyzer for intelligent vulnerability detection.
 
     Supports:
+    - Anthropic (cloud, Claude models)
     - Groq (cloud, fast inference)
     - Ollama (local)
     - Automatic fallback between providers
@@ -81,6 +83,8 @@ Respond with JSON:
     def __init__(
         self,
         provider: str = "auto",
+        anthropic_api_key: str = None,
+        anthropic_model: str = None,
         groq_api_key: str = None,
         groq_model: str = None,
         ollama_host: str = None,
@@ -93,7 +97,9 @@ Respond with JSON:
         Initialize AI analyzer.
 
         Args:
-            provider: "groq", "ollama", or "auto" (try groq first)
+            provider: "anthropic", "groq", "ollama", or "auto"
+            anthropic_api_key: Anthropic API key
+            anthropic_model: Anthropic model name
             groq_api_key: Groq API key
             groq_model: Groq model name
             ollama_host: Ollama server URL
@@ -108,6 +114,7 @@ Respond with JSON:
         self.timeout = timeout
 
         # Initialize providers
+        self.anthropic = get_anthropic_provider(api_key=anthropic_api_key, model=anthropic_model)
         self.groq = get_groq_provider(api_key=groq_api_key, model=groq_model)
         self.ollama = get_ollama_provider(host=ollama_host, model=ollama_model)
 
@@ -117,14 +124,19 @@ Respond with JSON:
 
     def _initialize_provider(self):
         """Initialize the active provider based on availability"""
-        if self.provider_preference == "groq":
+        if self.provider_preference == "anthropic":
+            if self.anthropic.is_available():
+                self._active_provider = self.anthropic
+        elif self.provider_preference == "groq":
             if self.groq.is_available():
                 self._active_provider = self.groq
         elif self.provider_preference == "ollama":
             if self.ollama.is_available():
                 self._active_provider = self.ollama
-        else:  # auto
-            if self.groq.is_available():
+        else:  # auto - try anthropic, then groq, then ollama
+            if self.anthropic.is_available():
+                self._active_provider = self.anthropic
+            elif self.groq.is_available():
                 self._active_provider = self.groq
             elif self.ollama.is_available():
                 self._active_provider = self.ollama

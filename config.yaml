@@ -47,6 +47,11 @@ ai:
   groq_api_key: null
   groq_model: "llama-3.3-70b-versatile"
   
+  # Anthropic configuration (cloud - Claude models)
+  # Set via environment: WEBCROSS_AI__ANTHROPIC_API_KEY
+  anthropic_api_key: null
+  anthropic_model: "claude-sonnet-4-20250514"
+  
   # Generation settings
   temperature: 0.3
   max_tokens: 2048

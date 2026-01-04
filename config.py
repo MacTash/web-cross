@@ -47,9 +47,9 @@ class ScannerSettings(BaseSettings):
 class AISettings(BaseSettings):
     """AI/LLM provider settings"""
     # Provider selection
-    provider: Literal["ollama", "groq", "auto"] = Field(
+    provider: Literal["ollama", "groq", "anthropic", "auto"] = Field(
         default="auto",
-        description="AI provider: ollama (local), groq (cloud), or auto (try groq, fallback to ollama)"
+        description="AI provider: ollama (local), groq (cloud), anthropic (cloud), or auto"
     )
 
     # Ollama settings
@@ -59,6 +59,10 @@ class AISettings(BaseSettings):
     # Groq settings
     groq_api_key: str | None = Field(default=None, description="Groq API key")
     groq_model: str = Field(default="llama-3.3-70b-versatile", description="Groq model name")
+
+    # Anthropic settings
+    anthropic_api_key: str | None = Field(default=None, description="Anthropic API key")
+    anthropic_model: str = Field(default="claude-sonnet-4-20250514", description="Anthropic model name")
 
     # Generation settings
     temperature: float = Field(default=0.3, description="LLM temperature")
