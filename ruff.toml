@@ -1,9 +1,9 @@
 # Web-Cross Ruff Configuration
-# Modern Python linter
 
 target-version = "py311"
 line-length = 100
 
+[lint]
 select = [
     "E",
     "W",
@@ -21,9 +21,9 @@ ignore = [
     "W191",
 ]
 
-[per-file-ignores]
+[lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/*" = ["S101", "S102", "S105", "S106"]
 
-[isort]
+[lint.isort]
 known-first-party = ["modules", "core", "reporting", "utils", "database"]
