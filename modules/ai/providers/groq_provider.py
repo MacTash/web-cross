@@ -3,9 +3,9 @@ Groq AI Provider
 Fast inference using Groq Cloud API.
 """
 
-import os
 import json
-from typing import Dict, List, Any, Optional
+import os
+from typing import Any
 
 from . import AIProvider, GenerationResult
 
@@ -19,11 +19,11 @@ except ImportError:
 class GroqProvider(AIProvider):
     """
     Groq AI Provider for fast LLM inference.
-    
+
     Supports models like Llama 3.3, Mixtral, etc.
     Requires GROQ_API_KEY environment variable or explicit key.
     """
-    
+
     # Available models on Groq
     MODELS = {
         "llama-3.3-70b-versatile": "Latest Llama 3.3 70B - Best quality",
@@ -32,9 +32,9 @@ class GroqProvider(AIProvider):
         "mixtral-8x7b-32768": "Mixtral 8x7B",
         "gemma2-9b-it": "Gemma 2 9B",
     }
-    
+
     DEFAULT_MODEL = "llama-3.3-70b-versatile"
-    
+
     def __init__(
         self,
         api_key: str = None,
@@ -45,21 +45,21 @@ class GroqProvider(AIProvider):
         self.model = model or self.DEFAULT_MODEL
         self.timeout = timeout
         self._client = None
-        
+
         if GROQ_AVAILABLE and self.api_key:
             self._client = Groq(api_key=self.api_key)
-    
+
     @property
     def name(self) -> str:
         return "groq"
-    
+
     def is_available(self) -> bool:
         """Check if Groq is available"""
         if not GROQ_AVAILABLE:
             return False
         if not self.api_key:
             return False
-        
+
         # Test the connection
         try:
             # Make a minimal test call
@@ -71,7 +71,7 @@ class GroqProvider(AIProvider):
             return True
         except Exception:
             return False
-    
+
     def generate(
         self,
         prompt: str,
@@ -89,28 +89,28 @@ class GroqProvider(AIProvider):
                 success=False,
                 error="Groq client not initialized",
             )
-        
+
         try:
             messages = []
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
-            
+
             kwargs = {
                 "model": self.model,
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             }
-            
+
             if json_mode:
                 kwargs["response_format"] = {"type": "json_object"}
-            
+
             response = self._client.chat.completions.create(**kwargs)
-            
+
             text = response.choices[0].message.content
             tokens = response.usage.total_tokens if response.usage else 0
-            
+
             return GenerationResult(
                 text=text,
                 model=self.model,
@@ -118,7 +118,7 @@ class GroqProvider(AIProvider):
                 tokens_used=tokens,
                 success=True,
             )
-            
+
         except Exception as e:
             return GenerationResult(
                 text="",
@@ -127,18 +127,18 @@ class GroqProvider(AIProvider):
                 success=False,
                 error=str(e),
             )
-    
+
     def generate_json(
         self,
         prompt: str,
         system_prompt: str = None,
         temperature: float = 0.3,
         max_tokens: int = 2048,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate JSON response"""
         # Add JSON instruction to system prompt
         json_system = (system_prompt or "") + "\nRespond only with valid JSON."
-        
+
         result = self.generate(
             prompt=prompt,
             system_prompt=json_system,
@@ -146,10 +146,10 @@ class GroqProvider(AIProvider):
             max_tokens=max_tokens,
             json_mode=True,
         )
-        
+
         if not result.success:
             return {"error": result.error}
-        
+
         try:
             return json.loads(result.text)
         except json.JSONDecodeError:

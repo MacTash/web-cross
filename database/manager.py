@@ -3,17 +3,14 @@ Web-Cross Database Manager
 Database operations and connection management.
 """
 
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, List, Dict, Any
-from functools import lru_cache
-import json
+from typing import Any
 
-from sqlalchemy import create_engine, select, delete, func, and_, or_
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import Session, sessionmaker
 
-from .models import Base, Scan, Finding, Technology, ScanConfig, ScanState
+from .models import Base, Finding, Scan, ScanConfig, ScanState, Technology
 
 
 class DatabaseManager:
@@ -21,11 +18,11 @@ class DatabaseManager:
     Manages database connections and operations for Web-Cross.
     Provides methods for CRUD operations on scans, findings, and configurations.
     """
-    
+
     def __init__(self, db_url: str = None, echo: bool = False):
         """
         Initialize database manager.
-        
+
         Args:
             db_url: Database connection URL (default: SQLite in data directory)
             echo: Whether to echo SQL queries
@@ -36,20 +33,20 @@ class DatabaseManager:
             data_dir = base_dir / "data"
             data_dir.mkdir(exist_ok=True)
             db_url = f"sqlite:///{data_dir / 'webcross.db'}"
-        
+
         self.db_url = db_url
         self.engine = create_engine(db_url, echo=echo)
         self.SessionLocal = sessionmaker(bind=self.engine)
-        
+
         # Create tables
         Base.metadata.create_all(self.engine)
-    
+
     def get_session(self) -> Session:
         """Get a new database session"""
         return self.SessionLocal()
-    
+
     # ==================== Scan Operations ====================
-    
+
     def create_scan(
         self,
         scan_id: str,
@@ -76,13 +73,13 @@ class DatabaseManager:
             session.commit()
             session.refresh(scan)
             return scan
-    
+
     def update_scan_status(
         self,
         scan_id: str,
         status: str,
         error_message: str = None,
-    ) -> Optional[Scan]:
+    ) -> Scan | None:
         """Update scan status"""
         with self.get_session() as session:
             scan = session.query(Scan).filter(Scan.scan_id == scan_id).first()
@@ -99,27 +96,27 @@ class DatabaseManager:
                 session.commit()
                 session.refresh(scan)
             return scan
-    
+
     def update_scan_results(
         self,
         scan_id: str,
-        findings: List[Dict],
-        technologies: List[Dict] = None,
+        findings: list[dict],
+        technologies: list[dict] = None,
         urls_crawled: int = 0,
         forms_found: int = 0,
-        risk_summary: Dict = None,
-    ) -> Optional[Scan]:
+        risk_summary: dict = None,
+    ) -> Scan | None:
         """Update scan with results"""
         with self.get_session() as session:
             scan = session.query(Scan).filter(Scan.scan_id == scan_id).first()
             if not scan:
                 return None
-            
+
             # Update counts
             scan.urls_crawled = urls_crawled
             scan.forms_found = forms_found
             scan.total_findings = len(findings)
-            
+
             # Update risk summary
             if risk_summary:
                 scan.overall_risk_score = risk_summary.get("score", 0.0)
@@ -128,7 +125,7 @@ class DatabaseManager:
                 scan.high_count = risk_summary.get("high_count", 0)
                 scan.medium_count = risk_summary.get("medium_count", 0)
                 scan.low_count = risk_summary.get("low_count", 0)
-            
+
             # Add findings
             for finding_data in findings:
                 finding = Finding(
@@ -151,7 +148,7 @@ class DatabaseManager:
                     ai_analysis=finding_data.get("ai_analysis"),
                 )
                 session.add(finding)
-            
+
             # Add technologies
             if technologies:
                 for tech_data in technologies:
@@ -165,33 +162,33 @@ class DatabaseManager:
                         evidence=tech_data.get("evidence"),
                     )
                     session.add(tech)
-            
+
             session.commit()
             session.refresh(scan)
             return scan
-    
-    def get_scan(self, scan_id: str) -> Optional[Scan]:
+
+    def get_scan(self, scan_id: str) -> Scan | None:
         """Get scan by ID"""
         with self.get_session() as session:
             return session.query(Scan).filter(Scan.scan_id == scan_id).first()
-    
-    def get_scan_with_findings(self, scan_id: str) -> Optional[Dict]:
+
+    def get_scan_with_findings(self, scan_id: str) -> dict | None:
         """Get scan with all findings"""
         with self.get_session() as session:
             scan = session.query(Scan).filter(Scan.scan_id == scan_id).first()
             if not scan:
                 return None
-            
+
             result = scan.to_dict()
             result["findings"] = [f.to_dict() for f in scan.findings]
             result["technologies"] = [t.to_dict() for t in scan.technologies]
             return result
-    
+
     def get_scans_for_domain(
         self,
         domain: str,
         limit: int = 10,
-    ) -> List[Scan]:
+    ) -> list[Scan]:
         """Get recent scans for a domain"""
         with self.get_session() as session:
             return (
@@ -201,8 +198,8 @@ class DatabaseManager:
                 .limit(limit)
                 .all()
             )
-    
-    def get_recent_scans(self, limit: int = 20) -> List[Scan]:
+
+    def get_recent_scans(self, limit: int = 20) -> list[Scan]:
         """Get recent scans"""
         with self.get_session() as session:
             return (
@@ -211,23 +208,23 @@ class DatabaseManager:
                 .limit(limit)
                 .all()
             )
-    
+
     def get_scan_history(
         self,
         days: int = 30,
         domain: str = None,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Get scan history for trend analysis"""
         with self.get_session() as session:
             cutoff = datetime.utcnow() - timedelta(days=days)
             query = session.query(Scan).filter(Scan.started_at >= cutoff)
-            
+
             if domain:
                 query = query.filter(Scan.target_domain == domain)
-            
+
             scans = query.order_by(Scan.started_at.asc()).all()
             return [s.to_dict() for s in scans]
-    
+
     def delete_scan(self, scan_id: str) -> bool:
         """Delete a scan and its findings"""
         with self.get_session() as session:
@@ -237,7 +234,7 @@ class DatabaseManager:
                 session.commit()
                 return True
             return False
-    
+
     def cleanup_old_scans(self, days: int = 90) -> int:
         """Delete scans older than specified days"""
         with self.get_session() as session:
@@ -245,24 +242,24 @@ class DatabaseManager:
             result = session.query(Scan).filter(Scan.started_at < cutoff).delete()
             session.commit()
             return result
-    
+
     # ==================== State Operations ====================
-    
+
     def save_scan_state(
         self,
         scan_id: str,
         phase: str,
         progress: float,
-        state_data: Dict,
-        pending_urls: List[str] = None,
-        completed_urls: List[str] = None,
+        state_data: dict,
+        pending_urls: list[str] = None,
+        completed_urls: list[str] = None,
     ) -> ScanState:
         """Save or update scan state for resume capability"""
         with self.get_session() as session:
             state = session.query(ScanState).filter(
                 ScanState.scan_id == scan_id
             ).first()
-            
+
             if state:
                 state.phase = phase
                 state.progress_percent = progress
@@ -280,18 +277,18 @@ class DatabaseManager:
                     completed_urls=completed_urls,
                 )
                 session.add(state)
-            
+
             session.commit()
             session.refresh(state)
             return state
-    
-    def get_scan_state(self, scan_id: str) -> Optional[ScanState]:
+
+    def get_scan_state(self, scan_id: str) -> ScanState | None:
         """Get scan state for resume"""
         with self.get_session() as session:
             return session.query(ScanState).filter(
                 ScanState.scan_id == scan_id
             ).first()
-    
+
     def delete_scan_state(self, scan_id: str) -> bool:
         """Delete scan state after completion"""
         with self.get_session() as session:
@@ -300,13 +297,13 @@ class DatabaseManager:
             ).delete()
             session.commit()
             return result > 0
-    
+
     # ==================== Config Operations ====================
-    
+
     def save_config(
         self,
         name: str,
-        config: Dict,
+        config: dict,
         description: str = None,
         is_default: bool = False,
     ) -> ScanConfig:
@@ -315,11 +312,11 @@ class DatabaseManager:
             # If setting as default, unset others
             if is_default:
                 session.query(ScanConfig).update({"is_default": False})
-            
+
             existing = session.query(ScanConfig).filter(
                 ScanConfig.name == name
             ).first()
-            
+
             if existing:
                 existing.config_json = config
                 existing.description = description
@@ -328,7 +325,7 @@ class DatabaseManager:
                 session.commit()
                 session.refresh(existing)
                 return existing
-            
+
             config_obj = ScanConfig(
                 name=name,
                 description=description,
@@ -339,26 +336,26 @@ class DatabaseManager:
             session.commit()
             session.refresh(config_obj)
             return config_obj
-    
-    def get_config(self, name: str) -> Optional[ScanConfig]:
+
+    def get_config(self, name: str) -> ScanConfig | None:
         """Get a saved configuration"""
         with self.get_session() as session:
             return session.query(ScanConfig).filter(
                 ScanConfig.name == name
             ).first()
-    
-    def get_default_config(self) -> Optional[ScanConfig]:
+
+    def get_default_config(self) -> ScanConfig | None:
         """Get the default configuration"""
         with self.get_session() as session:
             return session.query(ScanConfig).filter(
-                ScanConfig.is_default == True
+                ScanConfig.is_default
             ).first()
-    
-    def list_configs(self) -> List[ScanConfig]:
+
+    def list_configs(self) -> list[ScanConfig]:
         """List all saved configurations"""
         with self.get_session() as session:
             return session.query(ScanConfig).order_by(ScanConfig.name).all()
-    
+
     def delete_config(self, name: str) -> bool:
         """Delete a configuration"""
         with self.get_session() as session:
@@ -367,21 +364,21 @@ class DatabaseManager:
             ).delete()
             session.commit()
             return result > 0
-    
+
     # ==================== Statistics ====================
-    
-    def get_statistics(self) -> Dict[str, Any]:
+
+    def get_statistics(self) -> dict[str, Any]:
         """Get overall statistics"""
         with self.get_session() as session:
             total_scans = session.query(func.count(Scan.id)).scalar()
             total_findings = session.query(func.count(Finding.id)).scalar()
-            
+
             severity_counts = (
                 session.query(Finding.severity, func.count(Finding.id))
                 .group_by(Finding.severity)
                 .all()
             )
-            
+
             vuln_type_counts = (
                 session.query(Finding.vuln_type, func.count(Finding.id))
                 .group_by(Finding.vuln_type)
@@ -389,7 +386,7 @@ class DatabaseManager:
                 .limit(10)
                 .all()
             )
-            
+
             return {
                 "total_scans": total_scans,
                 "total_findings": total_findings,
@@ -399,7 +396,7 @@ class DatabaseManager:
 
 
 # Singleton instance
-_db_manager: Optional[DatabaseManager] = None
+_db_manager: DatabaseManager | None = None
 
 
 def get_db_manager(db_url: str = None, echo: bool = False) -> DatabaseManager:

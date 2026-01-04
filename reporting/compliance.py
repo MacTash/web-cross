@@ -3,8 +3,8 @@ Compliance Mapper
 Maps vulnerabilities to compliance frameworks (OWASP, CWE, PCI-DSS, etc.).
 """
 
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -16,15 +16,15 @@ class ComplianceMapping:
     cwe_id: str = ""
     cwe_name: str = ""
     cvss_base: float = 0.0
-    pci_dss: List[str] = field(default_factory=list)
-    nist: List[str] = field(default_factory=list)
-    gdpr: List[str] = field(default_factory=list)
+    pci_dss: list[str] = field(default_factory=list)
+    nist: list[str] = field(default_factory=list)
+    gdpr: list[str] = field(default_factory=list)
 
 
 class ComplianceMapper:
     """
     Maps vulnerability findings to compliance frameworks.
-    
+
     Supports:
     - OWASP Top 10 (2021)
     - CWE
@@ -33,7 +33,7 @@ class ComplianceMapper:
     - NIST
     - GDPR
     """
-    
+
     # OWASP Top 10 2021 mappings
     OWASP_2021 = {
         "A01:2021": "Broken Access Control",
@@ -47,9 +47,9 @@ class ComplianceMapper:
         "A09:2021": "Security Logging and Monitoring Failures",
         "A10:2021": "Server-Side Request Forgery (SSRF)",
     }
-    
+
     # Vulnerability type to compliance mapping
-    VULN_MAPPINGS: Dict[str, ComplianceMapping] = {
+    VULN_MAPPINGS: dict[str, ComplianceMapping] = {
         # Injection vulnerabilities
         "SQL_INJECTION": ComplianceMapping(
             vuln_type="SQL_INJECTION",
@@ -106,7 +106,7 @@ class ComplianceMapper:
             nist=["SI-10"],
             gdpr=["Article 32"],
         ),
-        
+
         # Access control
         "IDOR": ComplianceMapping(
             vuln_type="IDOR",
@@ -130,7 +130,7 @@ class ComplianceMapper:
             nist=["AC-3", "AC-4"],
             gdpr=["Article 25", "Article 32"],
         ),
-        
+
         # Authentication
         "MISSING_RATE_LIMITING": ComplianceMapping(
             vuln_type="MISSING_RATE_LIMITING",
@@ -154,7 +154,7 @@ class ComplianceMapper:
             nist=["SC-23"],
             gdpr=["Article 32"],
         ),
-        
+
         # SSRF
         "SSRF": ComplianceMapping(
             vuln_type="SSRF",
@@ -167,7 +167,7 @@ class ComplianceMapper:
             nist=["SI-10"],
             gdpr=["Article 32"],
         ),
-        
+
         # Path traversal
         "PATH_TRAVERSAL": ComplianceMapping(
             vuln_type="PATH_TRAVERSAL",
@@ -180,7 +180,7 @@ class ComplianceMapper:
             nist=["SI-10", "AC-3"],
             gdpr=["Article 32"],
         ),
-        
+
         # Deserialization
         "INSECURE_DESERIALIZATION": ComplianceMapping(
             vuln_type="INSECURE_DESERIALIZATION",
@@ -193,7 +193,7 @@ class ComplianceMapper:
             nist=["SI-10"],
             gdpr=["Article 32"],
         ),
-        
+
         # Redirect
         "OPEN_REDIRECT": ComplianceMapping(
             vuln_type="OPEN_REDIRECT",
@@ -206,7 +206,7 @@ class ComplianceMapper:
             nist=["SI-10"],
             gdpr=[],
         ),
-        
+
         # Subdomain takeover
         "SUBDOMAIN_TAKEOVER": ComplianceMapping(
             vuln_type="SUBDOMAIN_TAKEOVER",
@@ -219,7 +219,7 @@ class ComplianceMapper:
             nist=["CM-7"],
             gdpr=["Article 32"],
         ),
-        
+
         # Headers/Config
         "SECURITY_HEADERS": ComplianceMapping(
             vuln_type="SECURITY_HEADERS",
@@ -232,7 +232,7 @@ class ComplianceMapper:
             nist=["SC-8"],
             gdpr=["Article 32"],
         ),
-        
+
         # CORS
         "CORS": ComplianceMapping(
             vuln_type="CORS",
@@ -245,7 +245,7 @@ class ComplianceMapper:
             nist=["SC-8"],
             gdpr=["Article 32"],
         ),
-        
+
         # JWT
         "JWT": ComplianceMapping(
             vuln_type="JWT",
@@ -258,7 +258,7 @@ class ComplianceMapper:
             nist=["SC-12", "SC-13"],
             gdpr=["Article 32"],
         ),
-        
+
         # WebSocket
         "WEBSOCKET": ComplianceMapping(
             vuln_type="WEBSOCKET",
@@ -272,47 +272,47 @@ class ComplianceMapper:
             gdpr=["Article 32"],
         ),
     }
-    
+
     def __init__(self):
         pass
-    
-    def get_mapping(self, vuln_type: str) -> Optional[ComplianceMapping]:
+
+    def get_mapping(self, vuln_type: str) -> ComplianceMapping | None:
         """
         Get compliance mapping for a vulnerability type.
-        
+
         Args:
             vuln_type: Vulnerability type identifier
-        
+
         Returns:
             ComplianceMapping if found
         """
         # Normalize type
         normalized = vuln_type.upper().replace("-", "_").replace(" ", "_")
-        
+
         # Direct match
         if normalized in self.VULN_MAPPINGS:
             return self.VULN_MAPPINGS[normalized]
-        
+
         # Partial match
         for key, mapping in self.VULN_MAPPINGS.items():
             if key in normalized or normalized in key:
                 return mapping
-        
+
         return None
-    
-    def enrich_finding(self, finding: Dict[str, Any]) -> Dict[str, Any]:
+
+    def enrich_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
         """
         Enrich a finding with compliance information.
-        
+
         Args:
             finding: Vulnerability finding dictionary
-        
+
         Returns:
             Finding with added compliance fields
         """
         vuln_type = finding.get("type", "")
         mapping = self.get_mapping(vuln_type)
-        
+
         if mapping:
             finding["compliance"] = {
                 "owasp_top_10": mapping.owasp_top_10,
@@ -324,20 +324,20 @@ class ComplianceMapper:
                 "nist": mapping.nist,
                 "gdpr": mapping.gdpr,
             }
-        
+
         return finding
-    
-    def enrich_findings(self, findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+    def enrich_findings(self, findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Enrich multiple findings with compliance data"""
         return [self.enrich_finding(f) for f in findings]
-    
+
     def generate_compliance_summary(
         self,
-        findings: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        findings: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Generate compliance summary from findings.
-        
+
         Returns summary by each standard/framework.
         """
         summary = {
@@ -347,11 +347,11 @@ class ComplianceMapper:
             "nist": set(),
             "gdpr": set(),
         }
-        
+
         for finding in findings:
             vuln_type = finding.get("type", "")
             mapping = self.get_mapping(vuln_type)
-            
+
             if mapping:
                 # OWASP
                 owasp = mapping.owasp_top_10
@@ -362,33 +362,33 @@ class ComplianceMapper:
                             "count": 0,
                         }
                     summary["owasp_top_10"][owasp]["count"] += 1
-                
+
                 # CWE
                 cwe = mapping.cwe_id
                 if cwe:
                     if cwe not in summary["cwe"]:
                         summary["cwe"][cwe] = {"name": mapping.cwe_name, "count": 0}
                     summary["cwe"][cwe]["count"] += 1
-                
+
                 # PCI-DSS
                 summary["pci_dss"].update(mapping.pci_dss)
-                
+
                 # NIST
                 summary["nist"].update(mapping.nist)
-                
+
                 # GDPR
                 summary["gdpr"].update(mapping.gdpr)
-        
+
         # Convert sets to lists for JSON serialization
         summary["pci_dss"] = sorted(summary["pci_dss"])
         summary["nist"] = sorted(summary["nist"])
         summary["gdpr"] = sorted(summary["gdpr"])
-        
+
         return summary
 
 
 # Singleton
-_mapper: Optional[ComplianceMapper] = None
+_mapper: ComplianceMapper | None = None
 
 
 def get_compliance_mapper() -> ComplianceMapper:

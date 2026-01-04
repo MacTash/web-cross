@@ -1,18 +1,18 @@
 """Technology Fingerprinting Module"""
 
 import re
+from typing import Any
+
 import requests
-from typing import List, Dict, Any, Optional
-from bs4 import BeautifulSoup
 
 
 class TechFingerprinter:
     """Technology stack fingerprinting scanner"""
-    
+
     def __init__(self, timeout: int = 10, user_agent: str = None):
         self.timeout = timeout
         self.user_agent = user_agent or "WebCross-Scanner/1.0"
-        
+
         # Header-based detection
         self.header_signatures = {
             "Server": {
@@ -37,7 +37,7 @@ class TechFingerprinter:
                 "WordPress": {"tech": "WordPress", "category": "CMS"},
             },
         }
-        
+
         # Cookie-based detection
         self.cookie_signatures = {
             "PHPSESSID": {"tech": "PHP", "category": "Backend"},
@@ -50,7 +50,7 @@ class TechFingerprinter:
             "connect.sid": {"tech": "Express.js", "category": "Framework"},
             "ci_session": {"tech": "CodeIgniter", "category": "Framework"},
         }
-        
+
         # HTML-based detection
         self.html_signatures = {
             # Meta generators
@@ -60,7 +60,7 @@ class TechFingerprinter:
             r'<meta name="generator" content="TYPO3': {"tech": "TYPO3", "category": "CMS"},
             r'<meta name="generator" content="Wix': {"tech": "Wix", "category": "Website Builder"},
             r'<meta name="generator" content="Squarespace': {"tech": "Squarespace", "category": "Website Builder"},
-            
+
             # Script/CSS patterns
             r'/wp-content/': {"tech": "WordPress", "category": "CMS"},
             r'/wp-includes/': {"tech": "WordPress", "category": "CMS"},
@@ -74,14 +74,14 @@ class TechFingerprinter:
             r'data-reactroot': {"tech": "React", "category": "Framework"},
             r'data-v-[a-f0-9]+': {"tech": "Vue.js", "category": "Framework"},
             r'ember-view': {"tech": "Ember.js", "category": "Framework"},
-            
+
             # Analytics
             r'google-analytics.com': {"tech": "Google Analytics", "category": "Analytics"},
             r'gtag\(': {"tech": "Google Tag Manager", "category": "Analytics"},
             r'fbq\(': {"tech": "Facebook Pixel", "category": "Analytics"},
             r'hotjar.com': {"tech": "Hotjar", "category": "Analytics"},
         }
-        
+
         # Path-based detection
         self.path_checks = [
             ("/robots.txt", [
@@ -101,23 +101,23 @@ class TechFingerprinter:
                 (r"<configuration>", {"tech": "ASP.NET/IIS", "category": "Framework"})
             ]),
         ]
-    
-    def _make_request(self, url: str) -> Optional[requests.Response]:
+
+    def _make_request(self, url: str) -> requests.Response | None:
         try:
             headers = {"User-Agent": self.user_agent}
-            return requests.get(url, headers=headers, timeout=self.timeout, 
+            return requests.get(url, headers=headers, timeout=self.timeout,
                               verify=False, allow_redirects=True)
         except Exception:
             return None
-    
-    def scan_url(self, url: str) -> List[Dict[str, Any]]:
+
+    def scan_url(self, url: str) -> list[dict[str, Any]]:
         """Fingerprint technology stack"""
         technologies = []
-        
+
         response = self._make_request(url)
         if not response:
             return technologies
-        
+
         # Check headers
         for header, signatures in self.header_signatures.items():
             value = response.headers.get(header, '')
@@ -131,7 +131,7 @@ class TechFingerprinter:
                         "value": value[:100],
                         "url": url
                     })
-        
+
         # Check cookies
         for cookie in response.cookies:
             for cookie_name, tech_info in self.cookie_signatures.items():
@@ -143,7 +143,7 @@ class TechFingerprinter:
                         "source": f"Cookie: {cookie.name}",
                         "url": url
                     })
-        
+
         # Check HTML content
         content = response.text
         for pattern, tech_info in self.html_signatures.items():
@@ -155,7 +155,7 @@ class TechFingerprinter:
                     "source": "HTML Content",
                     "url": url
                 })
-        
+
         # Check paths
         from urllib.parse import urljoin
         for path, checks in self.path_checks:
@@ -171,7 +171,7 @@ class TechFingerprinter:
                             "source": f"Path: {path}",
                             "url": check_url
                         })
-                
+
                 # Git exposure is a security risk
                 if "/.git/" in path:
                     technologies.append({
@@ -180,7 +180,7 @@ class TechFingerprinter:
                         "url": check_url,
                         "confidence": "HIGH"
                     })
-        
+
         # Deduplicate
         seen = set()
         unique = []
@@ -189,5 +189,5 @@ class TechFingerprinter:
             if key not in seen:
                 seen.add(key)
                 unique.append(tech)
-        
+
         return unique

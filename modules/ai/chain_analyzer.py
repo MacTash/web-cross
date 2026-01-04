@@ -4,8 +4,8 @@ AI-powered detection of vulnerability chains and attack paths.
 """
 
 import json
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any
 
 from .providers.groq_provider import get_groq_provider
 from .providers.ollama_provider import get_ollama_provider
@@ -15,7 +15,7 @@ from .providers.ollama_provider import get_ollama_provider
 class AttackChain:
     """Represents a chain of vulnerabilities forming an attack path"""
     name: str
-    steps: List[Dict[str, Any]]
+    steps: list[dict[str, Any]]
     impact: str
     likelihood: str
     severity: str
@@ -26,14 +26,14 @@ class AttackChain:
 class VulnerabilityChainAnalyzer:
     """
     Analyzes vulnerability findings to identify attack chains.
-    
+
     Uses AI to:
     - Identify related vulnerabilities
     - Construct exploitation paths
     - Assess combined impact
     - Prioritize remediation
     """
-    
+
     CHAIN_ANALYSIS_PROMPT = """You are an expert red team operator analyzing vulnerability findings.
 
 Identify potential attack chains by:
@@ -105,7 +105,7 @@ Respond with JSON:
             "impact": "Remote shell access via gadget chains",
         },
     ]
-    
+
     def __init__(
         self,
         provider: str = "auto",
@@ -113,10 +113,10 @@ Respond with JSON:
         ollama_host: str = None,
     ):
         self.provider_preference = provider
-        
+
         self.groq = get_groq_provider(api_key=groq_api_key)
         self.ollama = get_ollama_provider(host=ollama_host)
-        
+
         self._active_provider = None
         if provider == "groq" and self.groq.is_available():
             self._active_provider = self.groq
@@ -127,39 +127,39 @@ Respond with JSON:
                 self._active_provider = self.groq
             elif self.ollama.is_available():
                 self._active_provider = self.ollama
-    
+
     def analyze_chains(
         self,
-        findings: List[Dict[str, Any]],
+        findings: list[dict[str, Any]],
         target: str = "",
-    ) -> List[AttackChain]:
+    ) -> list[AttackChain]:
         """
         Analyze findings to identify vulnerability chains.
-        
+
         Args:
             findings: List of vulnerability findings
             target: Target URL/application
-        
+
         Returns:
             List of identified attack chains
         """
         if not findings:
             return []
-        
+
         # Try AI-based analysis first
         if self._active_provider:
             chains = self._ai_analyze(findings, target)
             if chains:
                 return chains
-        
+
         # Fall back to pattern matching
         return self._fallback_analyze(findings)
-    
+
     def _ai_analyze(
         self,
-        findings: List[Dict[str, Any]],
+        findings: list[dict[str, Any]],
         target: str,
-    ) -> List[AttackChain]:
+    ) -> list[AttackChain]:
         """AI-based chain analysis"""
         findings_summary = json.dumps(
             [
@@ -173,7 +173,7 @@ Respond with JSON:
             ],
             indent=2,
         )
-        
+
         prompt = f"""Analyze these vulnerability findings for attack chains.
 
 Target: {target}
@@ -190,14 +190,14 @@ Identify exploitation chains and attack paths."""
             max_tokens=2000,
             json_mode=True,
         )
-        
+
         if not result.success:
             return []
-        
+
         try:
             data = json.loads(result.text)
             chains = data.get("chains", [])
-            
+
             return [
                 AttackChain(
                     name=c.get("name", "Unknown Chain"),
@@ -212,14 +212,14 @@ Identify exploitation chains and attack paths."""
             ]
         except (json.JSONDecodeError, KeyError):
             return []
-    
+
     def _fallback_analyze(
         self,
-        findings: List[Dict[str, Any]],
-    ) -> List[AttackChain]:
+        findings: list[dict[str, Any]],
+    ) -> list[AttackChain]:
         """Pattern-based fallback chain analysis"""
         chains = []
-        
+
         # Extract vulnerability types
         vuln_types = set()
         for f in findings:
@@ -227,7 +227,7 @@ Identify exploitation chains and attack paths."""
             # Normalize type names
             normalized = vuln_type.upper().replace("-", "_").replace(" ", "_")
             vuln_types.add(normalized)
-            
+
             # Also add common aliases
             if "XSS" in normalized or "CROSS_SITE" in normalized:
                 vuln_types.add("XSS")
@@ -237,7 +237,7 @@ Identify exploitation chains and attack paths."""
                 vuln_types.add("OPEN_REDIRECT")
             if "SSRF" in normalized or "SERVER_SIDE" in normalized:
                 vuln_types.add("SSRF")
-        
+
         # Check for known chains
         for known in self.KNOWN_CHAINS:
             required_vulns = set(known["vulns"])
@@ -254,34 +254,34 @@ Identify exploitation chains and attack paths."""
                     description=f"Chain of {', '.join(known['vulns'])} vulnerabilities",
                     mitigation=f"Fix any of: {', '.join(known['vulns'])}",
                 ))
-        
+
         return chains
-    
+
     def get_attack_graph(
         self,
-        findings: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        findings: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """
         Generate an attack graph representation.
-        
+
         Args:
             findings: List of vulnerability findings
-        
+
         Returns:
             Graph data structure for visualization
         """
         chains = self.analyze_chains(findings)
-        
+
         nodes = []
         edges = []
-        
+
         # Add entry point
         nodes.append({
             "id": "entry",
             "label": "Attacker Entry",
             "type": "entry",
         })
-        
+
         # Add vulnerability nodes
         for i, finding in enumerate(findings[:20]):
             node_id = f"vuln_{i}"
@@ -292,24 +292,24 @@ Identify exploitation chains and attack paths."""
                 "severity": finding.get("severity_label", "MEDIUM"),
                 "url": finding.get("url", ""),
             })
-            
+
             # Connect from entry
             edges.append({
                 "from": "entry",
                 "to": node_id,
                 "label": "exploit",
             })
-        
+
         # Add chain connections
         for chain in chains:
-            for i, step in enumerate(chain.steps[:-1]):
-                next_step = chain.steps[i + 1]
+            for i, _step in enumerate(chain.steps[:-1]):
+                chain.steps[i + 1]
                 edges.append({
                     "from": f"chain_{chain.name}_{i}",
                     "to": f"chain_{chain.name}_{i+1}",
                     "label": "leads to",
                 })
-        
+
         # Add impact nodes
         impacts = set()
         for chain in chains:
@@ -320,7 +320,7 @@ Identify exploitation chains and attack paths."""
                     "label": chain.impact[:50],
                     "type": "impact",
                 })
-        
+
         return {
             "nodes": nodes,
             "edges": edges,
@@ -328,7 +328,7 @@ Identify exploitation chains and attack paths."""
                 {
                     "name": c.name,
                     "severity": c.severity,
-		    "steps": len(c.steps),
+                    "steps": len(c.steps),
                 }
                 for c in chains
             ],
@@ -336,7 +336,7 @@ Identify exploitation chains and attack paths."""
 
 
 # Singleton
-_chain_analyzer: Optional[VulnerabilityChainAnalyzer] = None
+_chain_analyzer: VulnerabilityChainAnalyzer | None = None
 
 
 def get_chain_analyzer(**kwargs) -> VulnerabilityChainAnalyzer:

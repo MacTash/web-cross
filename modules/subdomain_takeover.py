@@ -5,13 +5,14 @@ Detects dangling DNS records that can be hijacked.
 
 import re
 import socket
-from typing import List, Dict, Any, Optional, Set
+from typing import Any
 from urllib.parse import urlparse
+
 import requests
 
 try:
-    import dns.resolver
     import dns.exception
+    import dns.resolver
     DNS_AVAILABLE = True
 except ImportError:
     DNS_AVAILABLE = False
@@ -20,14 +21,14 @@ except ImportError:
 class SubdomainTakeoverScanner:
     """
     Subdomain Takeover vulnerability scanner.
-    
+
     Detects:
     - Dangling CNAME records pointing to deprovisioned services
     - Vulnerable cloud service configurations (AWS, Azure, GitHub, etc.)
     - Unclaimed service endpoints
     - DNS misconfigurations
     """
-    
+
     # Known vulnerable service fingerprints
     # Format: (service_name, cname_pattern, response_fingerprint, severity)
     VULNERABLE_SERVICES = [
@@ -217,7 +218,7 @@ class SubdomainTakeoverScanner:
             "severity": "MEDIUM",
         },
     ]
-    
+
     def __init__(self, timeout: int = 10, user_agent: str = None):
         self.timeout = timeout
         self.user_agent = user_agent or "WebCross-Scanner/3.0"
@@ -225,18 +226,18 @@ class SubdomainTakeoverScanner:
         self.session.headers.update({
             "User-Agent": self.user_agent,
         })
-        
+
         # DNS resolver
         if DNS_AVAILABLE:
             self.resolver = dns.resolver.Resolver()
             self.resolver.timeout = timeout
             self.resolver.lifetime = timeout
-    
-    def _get_cname_records(self, domain: str) -> List[str]:
+
+    def _get_cname_records(self, domain: str) -> list[str]:
         """Get CNAME records for a domain"""
         if not DNS_AVAILABLE:
             return []
-        
+
         cnames = []
         try:
             answers = self.resolver.resolve(domain, "CNAME")
@@ -244,9 +245,9 @@ class SubdomainTakeoverScanner:
                 cnames.append(str(rdata.target).rstrip("."))
         except dns.exception.DNSException:
             pass
-        
+
         return cnames
-    
+
     def _check_domain_exists(self, domain: str) -> bool:
         """Check if domain resolves to any address"""
         try:
@@ -254,8 +255,8 @@ class SubdomainTakeoverScanner:
             return True
         except socket.gaierror:
             return False
-    
-    def _get_http_response(self, domain: str) -> Optional[requests.Response]:
+
+    def _get_http_response(self, domain: str) -> requests.Response | None:
         """Get HTTP response from domain"""
         for scheme in ["https", "http"]:
             try:
@@ -269,33 +270,33 @@ class SubdomainTakeoverScanner:
             except requests.RequestException:
                 continue
         return None
-    
+
     def _match_fingerprint(
-        self, 
-        response: requests.Response, 
-        fingerprints: List[str],
-    ) -> Optional[str]:
+        self,
+        response: requests.Response,
+        fingerprints: list[str],
+    ) -> str | None:
         """Check if response matches any fingerprint"""
         content = response.text
-        
+
         for fingerprint in fingerprints:
             if fingerprint == "NXDOMAIN":
                 continue  # Handled separately
             if fingerprint.lower() in content.lower():
                 return fingerprint
-        
+
         return None
-    
+
     def _check_subdomain_vulnerable(
-        self, 
+        self,
         subdomain: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Check if a subdomain is vulnerable to takeover"""
         findings = []
-        
+
         # Get CNAME records
         cnames = self._get_cname_records(subdomain)
-        
+
         if not cnames:
             # No CNAME - check A record
             if not self._check_domain_exists(subdomain):
@@ -319,7 +320,7 @@ class SubdomainTakeoverScanner:
                     "cwe": "CWE-284",
                 })
             return findings
-        
+
         # Check each CNAME against known vulnerable services
         for cname in cnames:
             for service in self.VULNERABLE_SERVICES:
@@ -327,7 +328,7 @@ class SubdomainTakeoverScanner:
                 for pattern in service["cname_patterns"]:
                     if re.search(pattern, cname, re.IGNORECASE):
                         # Found matching service - check if vulnerable
-                        
+
                         # First check if CNAME target resolves
                         if not self._check_domain_exists(cname):
                             findings.append({
@@ -353,12 +354,12 @@ class SubdomainTakeoverScanner:
                                 "cwe": "CWE-284",
                             })
                             break
-                        
+
                         # CNAME resolves - check HTTP response fingerprint
                         response = self._get_http_response(subdomain)
                         if response:
                             matched = self._match_fingerprint(
-                                response, 
+                                response,
                                 service["fingerprints"],
                             )
                             if matched:
@@ -385,13 +386,13 @@ class SubdomainTakeoverScanner:
                                     "cwe": "CWE-284",
                                 })
                         break
-        
+
         return findings
-    
-    def _discover_subdomains(self, domain: str) -> Set[str]:
+
+    def _discover_subdomains(self, domain: str) -> set[str]:
         """Discover subdomains from various sources"""
         subdomains = set()
-        
+
         # Common subdomain prefixes
         common_prefixes = [
             "www", "mail", "remote", "blog", "webmail", "server", "ns1", "ns2",
@@ -402,57 +403,57 @@ class SubdomainTakeoverScanner:
             "2tty", "vps", "govyty", "hgfgdf", "news", "1mail", "static", "staging",
             "beta", "alpha", "demo", "v2", "api2", "internal", "external", "legacy",
         ]
-        
+
         for prefix in common_prefixes:
             subdomains.add(f"{prefix}.{domain}")
-        
+
         return subdomains
-    
-    def scan_domain(self, domain: str) -> List[Dict[str, Any]]:
+
+    def scan_domain(self, domain: str) -> list[dict[str, Any]]:
         """
         Scan a domain for subdomain takeover vulnerabilities.
-        
+
         Args:
             domain: Target domain to scan (e.g., example.com)
-        
+
         Returns:
             List of vulnerability findings
         """
         findings = []
-        
+
         if not DNS_AVAILABLE:
             return [{
                 "type": "SCAN_ERROR",
                 "message": "dnspython library not installed. Run: pip install dnspython",
             }]
-        
+
         # Extract base domain from URL if needed
         if domain.startswith(("http://", "https://")):
             domain = urlparse(domain).netloc
-        
+
         # Remove any port
         domain = domain.split(":")[0]
-        
+
         # Discover subdomains
         subdomains = self._discover_subdomains(domain)
-        
+
         # Also check the main domain
         subdomains.add(domain)
-        
+
         # Check each subdomain
         for subdomain in subdomains:
             subdomain_findings = self._check_subdomain_vulnerable(subdomain)
             findings.extend(subdomain_findings)
-        
+
         return findings
-    
-    def scan_subdomain(self, subdomain: str) -> List[Dict[str, Any]]:
+
+    def scan_subdomain(self, subdomain: str) -> list[dict[str, Any]]:
         """
         Scan a specific subdomain for takeover vulnerability.
-        
+
         Args:
             subdomain: Specific subdomain to check
-        
+
         Returns:
             List of vulnerability findings
         """
@@ -461,27 +462,27 @@ class SubdomainTakeoverScanner:
                 "type": "SCAN_ERROR",
                 "message": "dnspython library not installed",
             }]
-        
+
         # Clean subdomain
         if subdomain.startswith(("http://", "https://")):
             subdomain = urlparse(subdomain).netloc
         subdomain = subdomain.split(":")[0]
-        
+
         return self._check_subdomain_vulnerable(subdomain)
-    
-    def scan_url(self, url: str) -> List[Dict[str, Any]]:
+
+    def scan_url(self, url: str) -> list[dict[str, Any]]:
         """
         Scan URL for subdomain takeover (extracts domain from URL).
-        
+
         Args:
             url: Target URL
-        
+
         Returns:
             List of vulnerability findings
         """
         parsed = urlparse(url)
         domain = parsed.netloc.split(":")[0]
-        
+
         # Check if it's already a subdomain or base domain
         parts = domain.split(".")
         if len(parts) > 2:

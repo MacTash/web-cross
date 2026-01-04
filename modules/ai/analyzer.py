@@ -5,21 +5,21 @@ Multi-provider AI analyzer for vulnerability detection.
 
 import json
 import re
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
+from typing import Any
 
 from .providers import GenerationResult
-from .providers.groq_provider import GroqProvider, get_groq_provider
-from .providers.ollama_provider import OllamaProvider, get_ollama_provider
+from .providers.groq_provider import get_groq_provider
+from .providers.ollama_provider import get_ollama_provider
 
 
 @dataclass
 class AnalysisResult:
     """Result from AI vulnerability analysis"""
-    vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
+    vulnerabilities: list[dict[str, Any]] = field(default_factory=list)
     confidence: float = 0.0
     reasoning: str = ""
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
     provider: str = ""
     model: str = ""
 
@@ -27,13 +27,13 @@ class AnalysisResult:
 class AIAnalyzer:
     """
     Multi-provider AI analyzer for intelligent vulnerability detection.
-    
+
     Supports:
     - Groq (cloud, fast inference)
     - Ollama (local)
     - Automatic fallback between providers
     """
-    
+
     # System prompts for different analysis types
     VULN_ANALYSIS_PROMPT = """You are an expert security analyst specializing in web application security.
 Analyze the provided HTTP response for security vulnerabilities.
@@ -91,7 +91,7 @@ Respond with JSON:
     ):
         """
         Initialize AI analyzer.
-        
+
         Args:
             provider: "groq", "ollama", or "auto" (try groq first)
             groq_api_key: Groq API key
@@ -106,15 +106,15 @@ Respond with JSON:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.timeout = timeout
-        
+
         # Initialize providers
         self.groq = get_groq_provider(api_key=groq_api_key, model=groq_model)
         self.ollama = get_ollama_provider(host=ollama_host, model=ollama_model)
-        
+
         # Determine active provider
         self._active_provider = None
         self._initialize_provider()
-    
+
     def _initialize_provider(self):
         """Initialize the active provider based on availability"""
         if self.provider_preference == "groq":
@@ -128,16 +128,16 @@ Respond with JSON:
                 self._active_provider = self.groq
             elif self.ollama.is_available():
                 self._active_provider = self.ollama
-    
+
     def is_available(self) -> bool:
         """Check if any AI provider is available"""
         return self._active_provider is not None
-    
+
     @property
     def active_provider_name(self) -> str:
         """Get name of active provider"""
         return self._active_provider.name if self._active_provider else "none"
-    
+
     def _generate(
         self,
         prompt: str,
@@ -153,7 +153,7 @@ Respond with JSON:
                 success=False,
                 error="No AI provider available",
             )
-        
+
         result = self._active_provider.generate(
             prompt=prompt,
             system_prompt=system_prompt,
@@ -161,7 +161,7 @@ Respond with JSON:
             max_tokens=self.max_tokens,
             json_mode=json_mode,
         )
-        
+
         # If primary fails and in auto mode, try fallback
         if not result.success and self.provider_preference == "auto":
             fallback = self.ollama if self._active_provider == self.groq else self.groq
@@ -173,10 +173,10 @@ Respond with JSON:
                     max_tokens=self.max_tokens,
                     json_mode=json_mode,
                 )
-        
+
         return result
-    
-    def _parse_json_response(self, text: str) -> Dict[str, Any]:
+
+    def _parse_json_response(self, text: str) -> dict[str, Any]:
         """Parse JSON from response text"""
         try:
             return json.loads(text)
@@ -190,21 +190,21 @@ Respond with JSON:
                 except json.JSONDecodeError:
                     pass
             return {}
-    
+
     def analyze_response(
         self,
         response_text: str,
         url: str = "",
-        context: Dict = None,
+        context: dict = None,
     ) -> AnalysisResult:
         """
         Analyze an HTTP response for vulnerabilities.
-        
+
         Args:
             response_text: HTTP response body
             url: Target URL
             context: Additional context (headers, method, etc.)
-        
+
         Returns:
             AnalysisResult with detected vulnerabilities
         """
@@ -212,7 +212,7 @@ Respond with JSON:
         max_response_len = 4000
         if len(response_text) > max_response_len:
             response_text = response_text[:max_response_len] + "\n... [truncated]"
-        
+
         prompt = f"""Analyze this HTTP response for security vulnerabilities.
 
 URL: {url}
@@ -228,12 +228,12 @@ Provide your analysis as JSON."""
             system_prompt=self.VULN_ANALYSIS_PROMPT,
             json_mode=True,
         )
-        
+
         if not result.success:
             return self._fallback_analysis(response_text)
-        
+
         data = self._parse_json_response(result.text)
-        
+
         return AnalysisResult(
             vulnerabilities=data.get("vulnerabilities", []),
             confidence=data.get("confidence", 0.0),
@@ -242,28 +242,28 @@ Provide your analysis as JSON."""
             provider=result.provider,
             model=result.model,
         )
-    
+
     def verify_exploit(
         self,
         payload: str,
         response_text: str,
         vuln_type: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Verify if an exploitation attempt was successful.
-        
+
         Args:
             payload: The payload that was sent
             response_text: The response received
             vuln_type: Type of vulnerability tested
-        
+
         Returns:
             Dict with verification result
         """
         max_response_len = 3000
         if len(response_text) > max_response_len:
             response_text = response_text[:max_response_len] + "\n... [truncated]"
-        
+
         prompt = f"""Verify if this {vuln_type} exploit was successful.
 
 Payload: {payload}
@@ -278,24 +278,24 @@ Analyze and respond with JSON."""
             system_prompt=self.PAYLOAD_ANALYSIS_PROMPT,
             json_mode=True,
         )
-        
+
         if not result.success:
             return {"exploited": False, "confidence": 0.0, "error": result.error}
-        
+
         return self._parse_json_response(result.text)
-    
+
     def assess_risk(
         self,
-        findings: List[Dict],
+        findings: list[dict],
         target: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Provide overall risk assessment for findings.
-        
+
         Args:
             findings: List of vulnerability findings
             target: Target URL/application
-        
+
         Returns:
             Risk assessment dictionary
         """
@@ -305,9 +305,9 @@ Analyze and respond with JSON."""
                 "score": 0.0,
                 "summary": "No vulnerabilities detected.",
             }
-        
+
         findings_summary = json.dumps(findings[:10], indent=2)  # Limit for token size
-        
+
         prompt = f"""Assess the overall security risk for this target.
 
 Target: {target}
@@ -327,16 +327,16 @@ Provide risk assessment as JSON with:
             system_prompt="You are a security risk analyst. Provide actionable risk assessments.",
             json_mode=True,
         )
-        
+
         if not result.success:
             return self._fallback_risk(findings)
-        
+
         return self._parse_json_response(result.text)
-    
+
     def _fallback_analysis(self, response_text: str) -> AnalysisResult:
         """Pattern-based fallback analysis when AI unavailable"""
         vulnerabilities = []
-        
+
         # Check for common vulnerability patterns
         patterns = [
             (r"SQL syntax.*MySQL", "SQL_INJECTION", "HIGH"),
@@ -348,7 +348,7 @@ Provide risk assessment as JSON with:
             (r"\[boot loader\]", "PATH_TRAVERSAL", "CRITICAL"),
             (r"stack trace|exception|error", "INFORMATION_DISCLOSURE", "LOW"),
         ]
-        
+
         for pattern, vuln_type, severity in patterns:
             if re.search(pattern, response_text, re.IGNORECASE):
                 vulnerabilities.append({
@@ -357,7 +357,7 @@ Provide risk assessment as JSON with:
                     "confidence": "MEDIUM",
                     "evidence": f"Pattern match: {pattern}",
                 })
-        
+
         return AnalysisResult(
             vulnerabilities=vulnerabilities,
             confidence=0.5 if vulnerabilities else 0.0,
@@ -365,21 +365,21 @@ Provide risk assessment as JSON with:
             provider="fallback",
             model="pattern",
         )
-    
-    def _fallback_risk(self, findings: List[Dict]) -> Dict[str, Any]:
+
+    def _fallback_risk(self, findings: list[dict]) -> dict[str, Any]:
         """Fallback risk assessment"""
         if not findings:
             return {"risk_level": "LOW", "score": 0.0}
-        
+
         severity_scores = {"CRITICAL": 10, "HIGH": 8, "MEDIUM": 5, "LOW": 2, "INFO": 1}
-        
+
         scores = []
         for f in findings:
             sev = f.get("severity", f.get("severity_label", "MEDIUM"))
             scores.append(severity_scores.get(sev, 5))
-        
+
         max_score = max(scores) if scores else 0
-        
+
         if max_score >= 9:
             level = "CRITICAL"
         elif max_score >= 7:
@@ -388,7 +388,7 @@ Provide risk assessment as JSON with:
             level = "MEDIUM"
         else:
             level = "LOW"
-        
+
         return {
             "risk_level": level,
             "score": max_score,
@@ -397,7 +397,7 @@ Provide risk assessment as JSON with:
 
 
 # Singleton instance
-_analyzer: Optional[AIAnalyzer] = None
+_analyzer: AIAnalyzer | None = None
 
 
 def get_ai_analyzer(**kwargs) -> AIAnalyzer:

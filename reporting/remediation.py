@@ -1,11 +1,11 @@
 """Remediation Engine - Provides fix recommendations"""
 
-from typing import Dict, Any
+from typing import Any
 
 
 class RemediationEngine:
     """Provides remediation strategies for vulnerabilities"""
-    
+
     REMEDIATIONS = {
         # SQL Injection
         "ERROR_BASED": {
@@ -63,7 +63,7 @@ class RemediationEngine:
                 "https://owasp.org/www-community/attacks/Blind_SQL_Injection"
             ]
         },
-        
+
         # XSS
         "REFLECTED_XSS": {
             "title": "Cross-Site Scripting (Reflected)",
@@ -101,7 +101,7 @@ class RemediationEngine:
                 "https://owasp.org/www-community/attacks/DOM_Based_XSS"
             ]
         },
-        
+
         # CSRF
         "CSRF_NO_TOKEN": {
             "title": "Missing CSRF Token",
@@ -138,7 +138,7 @@ class RemediationEngine:
                 "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite"
             ]
         },
-        
+
         # HTML Attacks
         "HTML_INJECTION": {
             "title": "HTML Injection",
@@ -174,7 +174,7 @@ class RemediationEngine:
                 "https://cheatsheetseries.owasp.org/cheatsheets/Clickjacking_Defense_Cheat_Sheet.html"
             ]
         },
-        
+
         # Input Fields
         "SENSITIVE_HIDDEN_FIELD": {
             "title": "Sensitive Data in Hidden Field",
@@ -212,7 +212,7 @@ class RemediationEngine:
                 "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html"
             ]
         },
-        
+
         # Headers
         "MISSING_HEADER": {
             "title": "Missing Security Header",
@@ -252,15 +252,15 @@ class RemediationEngine:
             ]
         }
     }
-    
+
     @classmethod
-    def get_remediation(cls, finding: Dict[str, Any]) -> Dict[str, Any]:
+    def get_remediation(cls, finding: dict[str, Any]) -> dict[str, Any]:
         """Get remediation for a finding"""
         vuln_type = finding.get("type", "UNKNOWN")
-        
+
         # Get remediation from database
         remediation = cls.REMEDIATIONS.get(vuln_type, {})
-        
+
         if not remediation:
             # Generic remediation
             return {
@@ -274,15 +274,15 @@ class RemediationEngine:
                 ],
                 "references": []
             }
-        
+
         return remediation
-    
+
     @classmethod
     def get_all_remediations(cls, findings: list) -> list:
         """Get remediations for all findings"""
         result = []
         seen_types = set()
-        
+
         for finding in findings:
             vuln_type = finding.get("type", "UNKNOWN")
             if vuln_type not in seen_types:
@@ -290,5 +290,5 @@ class RemediationEngine:
                 remediation["findings"] = [f for f in findings if f.get("type") == vuln_type]
                 result.append(remediation)
                 seen_types.add(vuln_type)
-        
+
         return result

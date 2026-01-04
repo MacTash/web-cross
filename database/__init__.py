@@ -3,8 +3,8 @@ Web-Cross Database Module
 SQLAlchemy models and database management for scan history.
 """
 
-from .models import Base, Scan, Finding, Technology, ScanConfig
 from .manager import DatabaseManager, get_db_manager
+from .models import Base, Finding, Scan, ScanConfig, Technology
 
 __all__ = [
     "Base",

@@ -4,11 +4,11 @@ Persistence layer for scan state to enable resume capability.
 """
 
 import json
-import time
-from typing import Dict, List, Any, Optional, Set
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
 import threading
+import time
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -18,47 +18,47 @@ class ScanState:
     target_url: str
     phase: str = "pending"  # pending, crawling, scanning, reporting, completed
     progress_percent: float = 0.0
-    
+
     # URLs state
-    discovered_urls: List[str] = field(default_factory=list)
-    scanned_urls: List[str] = field(default_factory=list)
-    pending_urls: List[str] = field(default_factory=list)
-    
+    discovered_urls: list[str] = field(default_factory=list)
+    scanned_urls: list[str] = field(default_factory=list)
+    pending_urls: list[str] = field(default_factory=list)
+
     # Forms state
-    discovered_forms: List[Dict] = field(default_factory=list)
-    scanned_forms: List[Dict] = field(default_factory=list)
-    
+    discovered_forms: list[dict] = field(default_factory=list)
+    scanned_forms: list[dict] = field(default_factory=list)
+
     # Findings
-    findings: List[Dict] = field(default_factory=list)
-    technologies: List[Dict] = field(default_factory=list)
-    
+    findings: list[dict] = field(default_factory=list)
+    technologies: list[dict] = field(default_factory=list)
+
     # Timing
     started_at: float = 0.0
     last_updated: float = 0.0
-    
+
     # Configuration
     scan_mode: str = "full"
     ai_enabled: bool = False
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ScanState":
+    def from_dict(cls, data: dict[str, Any]) -> "ScanState":
         return cls(**data)
 
 
 class ScanStateManager:
     """
     Manages scan state for pause/resume capability.
-    
+
     Features:
     - Periodic state persistence
     - Resume from last known state
     - Multiple scan tracking
     - Disk and database storage
     """
-    
+
     def __init__(
         self,
         state_dir: Path = None,
@@ -67,19 +67,19 @@ class ScanStateManager:
         self.state_dir = state_dir or Path.cwd() / "data" / "states"
         self.state_dir.mkdir(parents=True, exist_ok=True)
         self.auto_save_interval = auto_save_interval
-        
+
         # Active scans
-        self._states: Dict[str, ScanState] = {}
+        self._states: dict[str, ScanState] = {}
         self._lock = threading.Lock()
-        
+
         # Load existing states
         self._load_existing_states()
-    
+
     def _load_existing_states(self):
         """Load existing scan states from disk"""
         for state_file in self.state_dir.glob("*.json"):
             try:
-                with open(state_file, "r") as f:
+                with open(state_file) as f:
                     data = json.load(f)
                     state = ScanState.from_dict(data)
                     # Only load incomplete scans
@@ -87,7 +87,7 @@ class ScanStateManager:
                         self._states[state.scan_id] = state
             except Exception:
                 pass
-    
+
     def create_scan(
         self,
         scan_id: str,
@@ -97,13 +97,13 @@ class ScanStateManager:
     ) -> ScanState:
         """
         Create a new scan state.
-        
+
         Args:
             scan_id: Unique scan identifier
             target_url: Target URL
             scan_mode: Scan mode
             ai_enabled: Whether AI is enabled
-        
+
         Returns:
             New ScanState
         """
@@ -116,32 +116,32 @@ class ScanStateManager:
             scan_mode=scan_mode,
             ai_enabled=ai_enabled,
         )
-        
+
         with self._lock:
             self._states[scan_id] = state
-        
+
         self._save_state(state)
         return state
-    
-    def get_state(self, scan_id: str) -> Optional[ScanState]:
+
+    def get_state(self, scan_id: str) -> ScanState | None:
         """Get scan state by ID"""
         with self._lock:
             return self._states.get(scan_id)
-    
+
     def update_phase(
         self,
         scan_id: str,
         phase: str,
         progress: float = None,
-    ) -> Optional[ScanState]:
+    ) -> ScanState | None:
         """
         Update scan phase.
-        
+
         Args:
             scan_id: Scan identifier
             phase: New phase
             progress: Optional progress percentage
-        
+
         Returns:
             Updated state
         """
@@ -154,12 +154,12 @@ class ScanStateManager:
                 state.last_updated = time.time()
                 self._save_state(state)
             return state
-    
+
     def add_discovered_urls(
         self,
         scan_id: str,
-        urls: List[str],
-    ) -> Optional[ScanState]:
+        urls: list[str],
+    ) -> ScanState | None:
         """Add discovered URLs to scan state"""
         with self._lock:
             state = self._states.get(scan_id)
@@ -172,12 +172,12 @@ class ScanStateManager:
                 state.last_updated = time.time()
                 self._save_state(state)
             return state
-    
+
     def mark_url_scanned(
         self,
         scan_id: str,
         url: str,
-    ) -> Optional[ScanState]:
+    ) -> ScanState | None:
         """Mark a URL as scanned"""
         with self._lock:
             state = self._states.get(scan_id)
@@ -187,20 +187,20 @@ class ScanStateManager:
                 if url in state.pending_urls:
                     state.pending_urls.remove(url)
                 state.last_updated = time.time()
-                
+
                 # Update progress
                 total = len(state.discovered_urls) or 1
                 scanned = len(state.scanned_urls)
                 state.progress_percent = (scanned / total) * 100
-                
+
                 self._save_state(state)
             return state
-    
+
     def add_finding(
         self,
         scan_id: str,
-        finding: Dict[str, Any],
-    ) -> Optional[ScanState]:
+        finding: dict[str, Any],
+    ) -> ScanState | None:
         """Add a vulnerability finding"""
         with self._lock:
             state = self._states.get(scan_id)
@@ -209,12 +209,12 @@ class ScanStateManager:
                 state.last_updated = time.time()
                 self._save_state(state)
             return state
-    
+
     def add_technology(
         self,
         scan_id: str,
-        technology: Dict[str, Any],
-    ) -> Optional[ScanState]:
+        technology: dict[str, Any],
+    ) -> ScanState | None:
         """Add detected technology"""
         with self._lock:
             state = self._states.get(scan_id)
@@ -222,8 +222,8 @@ class ScanStateManager:
                 state.technologies.append(technology)
                 state.last_updated = time.time()
             return state
-    
-    def complete_scan(self, scan_id: str) -> Optional[ScanState]:
+
+    def complete_scan(self, scan_id: str) -> ScanState | None:
         """Mark scan as completed"""
         with self._lock:
             state = self._states.get(scan_id)
@@ -233,30 +233,30 @@ class ScanStateManager:
                 state.last_updated = time.time()
                 self._save_state(state)
             return state
-    
-    def get_resumable_scans(self) -> List[ScanState]:
+
+    def get_resumable_scans(self) -> list[ScanState]:
         """Get list of incomplete scans that can be resumed"""
         with self._lock:
             return [
                 s for s in self._states.values()
                 if s.phase not in ("completed", "failed")
             ]
-    
+
     def can_resume(self, scan_id: str) -> bool:
         """Check if a scan can be resumed"""
         state = self.get_state(scan_id)
         return state is not None and state.phase not in ("completed", "failed")
-    
+
     def delete_state(self, scan_id: str):
         """Delete scan state"""
         with self._lock:
             if scan_id in self._states:
                 del self._states[scan_id]
-        
+
         state_file = self.state_dir / f"{scan_id}.json"
         if state_file.exists():
             state_file.unlink()
-    
+
     def _save_state(self, state: ScanState):
         """Save state to disk"""
         state_file = self.state_dir / f"{state.scan_id}.json"
@@ -265,16 +265,16 @@ class ScanStateManager:
                 json.dump(state.to_dict(), f, indent=2)
         except Exception:
             pass
-    
+
     def cleanup_old_states(self, max_age_hours: int = 24):
         """Remove old completed scan states"""
         cutoff = time.time() - (max_age_hours * 3600)
-        
+
         for state_file in self.state_dir.glob("*.json"):
             try:
-                with open(state_file, "r") as f:
+                with open(state_file) as f:
                     data = json.load(f)
-                
+
                 if data.get("phase") == "completed":
                     if data.get("last_updated", 0) < cutoff:
                         state_file.unlink()
@@ -287,7 +287,7 @@ class ScanStateManager:
 
 
 # Singleton
-_manager: Optional[ScanStateManager] = None
+_manager: ScanStateManager | None = None
 
 
 def get_state_manager(**kwargs) -> ScanStateManager:

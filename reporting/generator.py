@@ -1,18 +1,17 @@
 """Report Generator - HTML, JSON, and text reports"""
 
 import json
-import os
 from datetime import datetime
-from typing import List, Dict, Any
+
 from jinja2 import Template
 
-from .risk_calculator import RiskCalculator
 from .remediation import RemediationEngine
+from .risk_calculator import RiskCalculator
 
 
 class ReportGenerator:
     """Generate professional security reports"""
-    
+
     HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -22,12 +21,12 @@ class ReportGenerator:
     <title>Web-Cross Security Report</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0f0f23; color: #e0e0e0; line-height: 1.6;
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { 
+        header {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             padding: 40px; border-radius: 12px; margin-bottom: 30px;
             border: 1px solid #333;
@@ -35,13 +34,13 @@ class ReportGenerator:
         h1 { color: #00d4ff; font-size: 2.5em; margin-bottom: 10px; }
         .subtitle { color: #888; font-size: 1.1em; }
         .meta-info { margin-top: 20px; display: flex; gap: 30px; flex-wrap: wrap; }
-        .meta-item { 
+        .meta-item {
             background: rgba(255,255,255,0.05); padding: 15px 25px;
             border-radius: 8px; border-left: 3px solid #00d4ff;
         }
         .meta-label { color: #888; font-size: 0.9em; }
         .meta-value { font-size: 1.4em; font-weight: bold; color: #fff; }
-        
+
         .summary-card {
             background: #1a1a2e; border-radius: 12px; padding: 30px;
             margin-bottom: 30px; border: 1px solid #333;
@@ -51,7 +50,7 @@ class ReportGenerator:
             display: flex; align-items: center; gap: 20px;
             background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px;
         }
-        .risk-score { 
+        .risk-score {
             font-size: 3em; font-weight: bold;
             width: 100px; height: 100px; display: flex;
             align-items: center; justify-content: center;
@@ -61,9 +60,9 @@ class ReportGenerator:
         .risk-high { border-color: #ff7f50; color: #ff7f50; }
         .risk-medium { border-color: #ffd93d; color: #ffd93d; }
         .risk-low { border-color: #4ade80; color: #4ade80; }
-        
+
         .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px; }
-        .stat-box { 
+        .stat-box {
             background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;
             text-align: center;
         }
@@ -72,13 +71,13 @@ class ReportGenerator:
         .stat-high { color: #ff7f50; }
         .stat-medium { color: #ffd93d; }
         .stat-low { color: #4ade80; }
-        
+
         .section { margin-bottom: 30px; }
-        .section-title { 
+        .section-title {
             color: #00d4ff; font-size: 1.3em; margin-bottom: 15px;
             padding-bottom: 10px; border-bottom: 1px solid #333;
         }
-        
+
         .finding {
             background: #1a1a2e; border-radius: 8px; padding: 20px;
             margin-bottom: 15px; border: 1px solid #333;
@@ -88,10 +87,10 @@ class ReportGenerator:
         .finding-high { border-left-color: #ff7f50; }
         .finding-medium { border-left-color: #ffd93d; }
         .finding-low { border-left-color: #4ade80; }
-        
+
         .finding-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
         .finding-type { font-weight: bold; color: #fff; }
-        .finding-score { 
+        .finding-score {
             padding: 3px 10px; border-radius: 4px; font-size: 0.9em;
             font-weight: bold;
         }
@@ -99,14 +98,14 @@ class ReportGenerator:
         .bg-high { background: #ff7f50; color: #fff; }
         .bg-medium { background: #ffd93d; color: #000; }
         .bg-low { background: #4ade80; color: #000; }
-        
+
         .finding-details { color: #aaa; font-size: 0.95em; }
         .finding-url { color: #00d4ff; word-break: break-all; }
-        .finding-evidence { 
+        .finding-evidence {
             background: rgba(0,0,0,0.3); padding: 10px; margin-top: 10px;
             border-radius: 4px; font-family: monospace; font-size: 0.9em;
         }
-        
+
         .remediation {
             background: #162236; border-radius: 8px; padding: 20px;
             margin-bottom: 15px; border: 1px solid #1e3a5f;
@@ -114,7 +113,7 @@ class ReportGenerator:
         .rem-title { color: #4ade80; font-weight: bold; margin-bottom: 10px; }
         .rem-steps { list-style-position: inside; }
         .rem-steps li { margin: 8px 0; }
-        
+
         .code-block {
             background: #0a0a15; padding: 15px; border-radius: 4px;
             margin: 10px 0; overflow-x: auto;
@@ -122,7 +121,7 @@ class ReportGenerator:
         .code-block code { color: #4ade80; font-family: 'Fira Code', monospace; }
         .code-vulnerable { border-left: 3px solid #ff4757; }
         .code-secure { border-left: 3px solid #4ade80; }
-        
+
         footer {
             text-align: center; padding: 30px; color: #666;
             border-top: 1px solid #333; margin-top: 30px;
@@ -149,7 +148,7 @@ class ReportGenerator:
                 </div>
             </div>
         </header>
-        
+
         <div class="summary-card">
             <h2 class="summary-title">📊 Executive Summary</h2>
             <div class="risk-gauge">
@@ -180,7 +179,7 @@ class ReportGenerator:
                 </div>
             </div>
         </div>
-        
+
         <div class="section">
             <h2 class="section-title">🔍 Vulnerability Findings</h2>
             {% for finding in findings %}
@@ -201,7 +200,7 @@ class ReportGenerator:
             </div>
             {% endfor %}
         </div>
-        
+
         <div class="section">
             <h2 class="section-title">🛡️ Remediation Strategies</h2>
             {% for rem in remediations %}
@@ -229,7 +228,7 @@ class ReportGenerator:
             </div>
             {% endfor %}
         </div>
-        
+
         <footer>
             <p>Generated by Web-Cross Security Scanner | MacTash</p>
             <p style="font-size: 0.9em;">{{ scan_date }}</p>
@@ -238,23 +237,23 @@ class ReportGenerator:
 </body>
 </html>
 """
-    
-    def __init__(self, target_url: str, findings: List[Dict], scan_duration: str = "N/A"):
+
+    def __init__(self, target_url: str, findings: list[dict], scan_duration: str = "N/A"):
         self.target_url = target_url
         self.findings = findings
         self.scan_duration = scan_duration
         self.scan_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
+
         # Calculate risk scores
         self.overall_risk = RiskCalculator.calculate_overall_score(findings)
-        
+
         # Get remediations
         self.remediations = RemediationEngine.get_all_remediations(findings)
-    
+
     def generate_html(self, output_path: str = None) -> str:
         """Generate HTML report"""
         template = Template(self.HTML_TEMPLATE)
-        
+
         html_content = template.render(
             target_url=self.target_url,
             scan_date=self.scan_date,
@@ -263,14 +262,14 @@ class ReportGenerator:
             findings=self.findings,
             remediations=self.remediations
         )
-        
+
         if output_path:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
-        
+
         return html_content
-    
-    def generate_json(self, output_path: str = None) -> Dict:
+
+    def generate_json(self, output_path: str = None) -> dict:
         """Generate JSON report"""
         report = {
             "metadata": {
@@ -292,13 +291,13 @@ class ReportGenerator:
                 for r in self.remediations
             ]
         }
-        
+
         if output_path:
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(report, f, indent=2)
-        
+
         return report
-    
+
     def generate_text(self, output_path: str = None) -> str:
         """Generate text report"""
         lines = []
@@ -308,7 +307,7 @@ class ReportGenerator:
         lines.append(f"\nTarget: {self.target_url}")
         lines.append(f"Date: {self.scan_date}")
         lines.append(f"Duration: {self.scan_duration}")
-        
+
         lines.append("\n" + "-" * 70)
         lines.append("EXECUTIVE SUMMARY")
         lines.append("-" * 70)
@@ -318,11 +317,11 @@ class ReportGenerator:
         lines.append(f"  High: {self.overall_risk['high_count']}")
         lines.append(f"  Medium: {self.overall_risk['medium_count']}")
         lines.append(f"  Low: {self.overall_risk['low_count']}")
-        
+
         lines.append("\n" + "-" * 70)
         lines.append("FINDINGS")
         lines.append("-" * 70)
-        
+
         for i, finding in enumerate(self.findings, 1):
             lines.append(f"\n[{i}] {finding['type']}")
             lines.append(f"    Risk: {finding.get('risk_score', 'N/A')} ({finding.get('severity_label', 'N/A')})")
@@ -330,26 +329,26 @@ class ReportGenerator:
             if finding.get('parameter'):
                 lines.append(f"    Parameter: {finding['parameter']}")
             lines.append(f"    Evidence: {finding.get('evidence', 'N/A')}")
-        
+
         lines.append("\n" + "-" * 70)
         lines.append("REMEDIATIONS")
         lines.append("-" * 70)
-        
+
         for rem in self.remediations:
             lines.append(f"\n>> {rem['title']}")
             lines.append(f"   {rem['description']}")
             lines.append("\n   Steps:")
             for step in rem['remediation']:
                 lines.append(f"   - {step}")
-        
+
         lines.append("\n" + "=" * 70)
         lines.append("Generated by Web-Cross Security Scanner | MacTash")
         lines.append("=" * 70)
-        
+
         content = "\n".join(lines)
-        
+
         if output_path:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-        
+
         return content

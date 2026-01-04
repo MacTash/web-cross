@@ -1,11 +1,11 @@
 """Risk Score Calculator"""
 
-from typing import List, Dict, Any
+from typing import Any
 
 
 class RiskCalculator:
     """Calculate risk scores for vulnerabilities"""
-    
+
     # CVSS-like base scores by vulnerability type
     BASE_SCORES = {
         # SQL Injection
@@ -13,19 +13,19 @@ class RiskCalculator:
         "BOOLEAN_BLIND": 8.5,
         "TIME_BLIND": 8.0,
         "UNION_BASED": 9.0,
-        
+
         # XSS
         "REFLECTED_XSS": 6.5,
         "STORED_XSS": 8.0,
         "STORED_XSS_INDICATOR": 7.0,
         "DOM_XSS_POTENTIAL": 5.5,
-        
+
         # CSRF
         "CSRF_NO_TOKEN": 6.0,
         "MISSING_SAMESITE": 4.0,
         "MISSING_HTTPONLY": 5.0,
         "MISSING_SECURE": 3.0,
-        
+
         # HTML Attacks
         "HTML_INJECTION": 5.5,
         "CLICKJACKING": 4.5,
@@ -34,7 +34,7 @@ class RiskCalculator:
         "AUTOCOMPLETE_SENSITIVE": 2.5,
         "SUSPICIOUS_BASE_TAG": 7.0,
         "META_REDIRECT_EXTERNAL": 4.0,
-        
+
         # Input Fields
         "MISSING_INPUT_VALIDATION": 3.0,
         "WEAK_PASSWORD_POLICY": 3.5,
@@ -43,49 +43,49 @@ class RiskCalculator:
         "SERVER_ERROR_ON_INPUT": 6.0,
         "UNRESTRICTED_FILE_UPLOAD": 7.5,
         "INCORRECT_ENCTYPE": 3.0,
-        
+
         # Headers
         "MISSING_HEADER": 4.0,
         "HEADER_MISCONFIGURATION": 4.5,
         "INFORMATION_DISCLOSURE": 3.0,
         "INSECURE_CACHING": 4.0,
     }
-    
+
     # Confidence modifiers
     CONFIDENCE_MODIFIERS = {
         "HIGH": 1.0,
         "MEDIUM": 0.8,
         "LOW": 0.6
     }
-    
+
     # Severity modifiers for headers
     SEVERITY_MODIFIERS = {
         "HIGH": 1.2,
         "MEDIUM": 1.0,
         "LOW": 0.8
     }
-    
+
     @classmethod
-    def calculate_score(cls, finding: Dict[str, Any]) -> float:
+    def calculate_score(cls, finding: dict[str, Any]) -> float:
         """Calculate risk score for a single finding"""
         vuln_type = finding.get("type", "UNKNOWN")
         confidence = finding.get("confidence", "MEDIUM")
         severity = finding.get("severity", "MEDIUM")
-        
+
         # Get base score
         base_score = cls.BASE_SCORES.get(vuln_type, 5.0)
-        
+
         # Apply confidence modifier
         confidence_mod = cls.CONFIDENCE_MODIFIERS.get(confidence, 0.8)
-        
+
         # Apply severity modifier (for header findings)
         severity_mod = cls.SEVERITY_MODIFIERS.get(severity, 1.0)
-        
+
         # Calculate final score (capped at 10.0)
         final_score = min(10.0, base_score * confidence_mod * severity_mod)
-        
+
         return round(final_score, 1)
-    
+
     @classmethod
     def get_severity_label(cls, score: float) -> str:
         """Get severity label from score"""
@@ -99,7 +99,7 @@ class RiskCalculator:
             return "LOW"
         else:
             return "INFO"
-    
+
     @classmethod
     def get_severity_color(cls, score: float) -> str:
         """Get color for severity (for CLI/HTML)"""
@@ -113,9 +113,9 @@ class RiskCalculator:
             return "cyan"
         else:
             return "green"
-    
+
     @classmethod
-    def calculate_overall_score(cls, findings: List[Dict]) -> Dict[str, Any]:
+    def calculate_overall_score(cls, findings: list[dict]) -> dict[str, Any]:
         """Calculate overall risk score for all findings"""
         if not findings:
             return {
@@ -124,35 +124,35 @@ class RiskCalculator:
                 "total_findings": 0,
                 "breakdown": {}
             }
-        
+
         # Score each finding
         scores = []
         breakdown = {}
-        
+
         for finding in findings:
             score = cls.calculate_score(finding)
             finding["risk_score"] = score
             finding["severity_label"] = cls.get_severity_label(score)
             scores.append(score)
-            
+
             vuln_type = finding.get("type", "UNKNOWN")
             if vuln_type not in breakdown:
                 breakdown[vuln_type] = {"count": 0, "max_score": 0}
             breakdown[vuln_type]["count"] += 1
             breakdown[vuln_type]["max_score"] = max(breakdown[vuln_type]["max_score"], score)
-        
+
         # Overall score is weighted average (higher scores count more)
         sorted_scores = sorted(scores, reverse=True)
         weighted_sum = 0
         weight_total = 0
-        
+
         for i, score in enumerate(sorted_scores):
             weight = 1 / (i + 1)  # Higher weights for higher scores
             weighted_sum += score * weight
             weight_total += weight
-        
+
         overall_score = round(weighted_sum / weight_total, 1) if weight_total > 0 else 0.0
-        
+
         return {
             "score": overall_score,
             "max_score": max(scores) if scores else 0.0,

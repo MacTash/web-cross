@@ -1,16 +1,17 @@
 """Security Headers Scanner Module"""
 
+from typing import Any
+
 import requests
-from typing import List, Dict, Any, Optional
 
 
 class HeaderScanner:
     """Security headers vulnerability scanner"""
-    
+
     def __init__(self, timeout: int = 10, user_agent: str = None):
         self.timeout = timeout
         self.user_agent = user_agent or "WebCross-Scanner/1.0"
-        
+
         # Security headers and their expected values
         self.security_headers = {
             "Strict-Transport-Security": {
@@ -69,7 +70,7 @@ class HeaderScanner:
                 "severity": "LOW"
             }
         }
-        
+
         # Dangerous headers that shouldn't be exposed
         self.dangerous_headers = [
             "Server",
@@ -77,27 +78,27 @@ class HeaderScanner:
             "X-AspNet-Version",
             "X-AspNetMvc-Version",
         ]
-    
-    def _make_request(self, url: str) -> Optional[requests.Response]:
+
+    def _make_request(self, url: str) -> requests.Response | None:
         """Make HTTP request"""
         try:
             headers = {"User-Agent": self.user_agent}
-            return requests.get(url, headers=headers, timeout=self.timeout, 
+            return requests.get(url, headers=headers, timeout=self.timeout,
                               verify=False, allow_redirects=True)
         except Exception:
             return None
-    
-    def _check_hsts(self, value: str) -> Dict:
+
+    def _check_hsts(self, value: str) -> dict:
         """Check HSTS header configuration"""
         result = {"valid": True, "issues": []}
-        
+
         if not value:
             result["valid"] = False
             result["issues"].append("HSTS header missing")
             return result
-        
+
         value_lower = value.lower()
-        
+
         # Check max-age
         if "max-age=" not in value_lower:
             result["valid"] = False
@@ -109,86 +110,86 @@ class HeaderScanner:
                     result["issues"].append(f"max-age too short ({max_age}s, recommended: 31536000)")
             except ValueError:
                 result["issues"].append("Invalid max-age value")
-        
+
         # Check for includeSubDomains
         if "includesubdomains" not in value_lower:
             result["issues"].append("Missing includeSubDomains directive")
-        
+
         # Check for preload
         if "preload" not in value_lower:
             result["issues"].append("Missing preload directive (recommended)")
-        
+
         return result
-    
-    def _check_csp(self, value: str) -> Dict:
+
+    def _check_csp(self, value: str) -> dict:
         """Check CSP header configuration"""
         result = {"valid": True, "issues": []}
-        
+
         if not value:
             result["valid"] = False
             result["issues"].append("CSP header missing")
             return result
-        
+
         value_lower = value.lower()
-        
+
         # Check for dangerous directives
         if "'unsafe-inline'" in value_lower:
             result["issues"].append("Contains 'unsafe-inline' (XSS risk)")
-        
+
         if "'unsafe-eval'" in value_lower:
             result["issues"].append("Contains 'unsafe-eval' (XSS risk)")
-        
+
         if "data:" in value_lower and "script-src" in value_lower:
             result["issues"].append("Allows data: URIs in scripts (XSS risk)")
-        
+
         # Check for default-src
         if "default-src" not in value_lower:
             result["issues"].append("Missing default-src directive")
-        
+
         # Check for script-src
         if "script-src" not in value_lower and "default-src" not in value_lower:
             result["issues"].append("No script-src or default-src defined")
-        
+
         # Check for wildcard
         if "script-src *" in value_lower or "default-src *" in value_lower:
             result["valid"] = False
             result["issues"].append("Wildcard (*) in script sources is dangerous")
-        
+
         return result
-    
-    def _check_permissions_policy(self, value: str) -> Dict:
+
+    def _check_permissions_policy(self, value: str) -> dict:
         """Check Permissions-Policy header"""
         result = {"valid": True, "issues": []}
-        
+
         if not value:
             result["issues"].append("Permissions-Policy not set (recommended)")
             return result
-        
+
         # Check for dangerous permissions enabled
         dangerous_features = ["camera", "microphone", "geolocation", "payment"]
         value_lower = value.lower()
-        
+
         for feature in dangerous_features:
             if f"{feature}=*" in value_lower or f"{feature}=()" not in value_lower:
                 if f"{feature}=self" not in value_lower and f"{feature}=(self)" not in value_lower:
                     result["issues"].append(f"{feature} permission may be too permissive")
-        
+
         return result
-    
-    def scan_url(self, url: str) -> List[Dict[str, Any]]:
+
+    def scan_url(self, url: str) -> list[dict[str, Any]]:
         """Scan a URL for security header issues"""
         findings = []
-        
+
         response = self._make_request(url)
         if not response:
             return findings
-        
+
         headers = response.headers
-        
+
         # Check required security headers
         for header_name, config in self.security_headers.items():
             header_value = headers.get(header_name, "")
-            
+
             if config.get("check"):
                 # Custom check function
                 check_result = config["check"](header_value)
@@ -243,7 +244,7 @@ class HeaderScanner:
                             "confidence": "MEDIUM",
                             "severity": config["severity"]
                         })
-        
+
         # Check for information disclosure headers
         for header_name in self.dangerous_headers:
             if header_name in headers:
@@ -257,7 +258,7 @@ class HeaderScanner:
                     "confidence": "MEDIUM",
                     "severity": "LOW"
                 })
-        
+
         # Check for missing cache control on sensitive pages
         cache_control = headers.get("Cache-Control", "")
         if not cache_control or "no-store" not in cache_control.lower():
@@ -272,5 +273,5 @@ class HeaderScanner:
                     "confidence": "MEDIUM",
                     "severity": "MEDIUM"
                 })
-        
+
         return findings

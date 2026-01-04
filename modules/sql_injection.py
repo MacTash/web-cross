@@ -1,22 +1,23 @@
 """SQL Injection Scanner Module"""
 
+import os
 import re
 import time
+from typing import Any
+from urllib.parse import parse_qs, urlencode, urlparse
+
 import requests
-from typing import List, Dict, Any, Optional
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode
-from bs4 import BeautifulSoup
-import os
+
 
 class SQLiScanner:
     """SQL Injection vulnerability scanner"""
-    
+
     def __init__(self, timeout: int = 10, user_agent: str = None):
         self.timeout = timeout
         self.user_agent = user_agent or "WebCross-Scanner/1.0"
         self.payloads = self._load_payloads()
         self.findings = []
-        
+
         # SQL error patterns for detection
         self.error_patterns = [
             r"SQL syntax.*MySQL",
@@ -69,13 +70,13 @@ class SQLiScanner:
             r"unclosed quotation mark",
             r"quoted string not properly terminated",
         ]
-        
-    def _load_payloads(self) -> List[str]:
+
+    def _load_payloads(self) -> list[str]:
         """Load SQL injection payloads from file"""
         payload_file = os.path.join(os.path.dirname(__file__), '..', 'payloads', 'sqli.txt')
         payloads = []
         try:
-            with open(payload_file, 'r') as f:
+            with open(payload_file) as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith('#'):
@@ -90,28 +91,28 @@ class SQLiScanner:
                 "' AND SLEEP(5)--",
             ]
         return payloads
-    
-    def _make_request(self, url: str, method: str = "GET", 
-                      data: Dict = None, params: Dict = None) -> Optional[requests.Response]:
+
+    def _make_request(self, url: str, method: str = "GET",
+                      data: dict = None, params: dict = None) -> requests.Response | None:
         """Make HTTP request with error handling"""
         try:
             headers = {"User-Agent": self.user_agent}
             if method.upper() == "GET":
-                return requests.get(url, params=params, headers=headers, 
+                return requests.get(url, params=params, headers=headers,
                                   timeout=self.timeout, verify=False)
             else:
                 return requests.post(url, data=data, headers=headers,
                                    timeout=self.timeout, verify=False)
         except Exception:
             return None
-    
-    def _check_error_based(self, response: requests.Response, payload: str) -> Optional[Dict]:
+
+    def _check_error_based(self, response: requests.Response, payload: str) -> dict | None:
         """Check for error-based SQL injection"""
         if not response:
             return None
-            
-        content = response.text.lower()
-        
+
+        response.text.lower()
+
         for pattern in self.error_patterns:
             if re.search(pattern, response.text, re.IGNORECASE):
                 return {
@@ -121,37 +122,37 @@ class SQLiScanner:
                     "confidence": "HIGH"
                 }
         return None
-    
-    def _check_boolean_based(self, url: str, param: str, 
-                             original_response: requests.Response) -> Optional[Dict]:
+
+    def _check_boolean_based(self, url: str, param: str,
+                             original_response: requests.Response) -> dict | None:
         """Check for boolean-based blind SQL injection"""
         if not original_response:
             return None
-            
+
         # True condition
         true_payload = "' OR '1'='1"
-        # False condition  
+        # False condition
         false_payload = "' AND '1'='2"
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         # Test true condition
         params[param] = [true_payload]
         true_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(params, doseq=True)}"
         true_response = self._make_request(true_url)
-        
+
         # Test false condition
         params[param] = [false_payload]
         false_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(params, doseq=True)}"
         false_response = self._make_request(false_url)
-        
+
         if true_response and false_response:
             # Compare response lengths
             true_len = len(true_response.text)
             false_len = len(false_response.text)
             orig_len = len(original_response.text)
-            
+
             # If true response is similar to original but false is different
             if abs(true_len - orig_len) < 100 and abs(false_len - orig_len) > 100:
                 return {
@@ -161,26 +162,26 @@ class SQLiScanner:
                     "confidence": "MEDIUM"
                 }
         return None
-    
-    def _check_time_based(self, url: str, param: str) -> Optional[Dict]:
+
+    def _check_time_based(self, url: str, param: str) -> dict | None:
         """Check for time-based blind SQL injection"""
         time_payloads = [
             ("' AND SLEEP(3)--", 3),
             ("'; WAITFOR DELAY '0:0:3'--", 3),
             ("' OR SLEEP(3)--", 3),
         ]
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         for payload, expected_delay in time_payloads:
             params[param] = [payload]
             test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(params, doseq=True)}"
-            
+
             start_time = time.time()
-            response = self._make_request(test_url)
+            self._make_request(test_url)
             elapsed = time.time() - start_time
-            
+
             if elapsed >= expected_delay - 0.5:  # Allow 0.5s tolerance
                 return {
                     "type": "TIME_BLIND",
@@ -189,32 +190,32 @@ class SQLiScanner:
                     "confidence": "HIGH"
                 }
         return None
-    
-    def scan_url(self, url: str) -> List[Dict[str, Any]]:
+
+    def scan_url(self, url: str) -> list[dict[str, Any]]:
         """Scan a URL for SQL injection vulnerabilities"""
         findings = []
-        
+
         # Get original response
         original_response = self._make_request(url)
         if not original_response:
             return findings
-        
+
         # Parse URL parameters
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         if not params:
             return findings
-        
+
         # Test each parameter
         for param in params:
             for payload in self.payloads[:15]:  # Limit payloads for speed
                 test_params = params.copy()
                 test_params[param] = [payload]
                 test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(test_params, doseq=True)}"
-                
+
                 response = self._make_request(test_url)
-                
+
                 # Check error-based
                 error_result = self._check_error_based(response, payload)
                 if error_result:
@@ -222,43 +223,43 @@ class SQLiScanner:
                     error_result["url"] = url
                     findings.append(error_result)
                     break  # Found vuln in this param, move on
-            
+
             # Check boolean-based
             bool_result = self._check_boolean_based(url, param, original_response)
             if bool_result:
                 bool_result["parameter"] = param
                 bool_result["url"] = url
                 findings.append(bool_result)
-            
+
             # Check time-based (slower, do last)
             time_result = self._check_time_based(url, param)
             if time_result:
                 time_result["parameter"] = param
                 time_result["url"] = url
                 findings.append(time_result)
-        
+
         return findings
-    
-    def scan_form(self, url: str, form: Dict) -> List[Dict[str, Any]]:
+
+    def scan_form(self, url: str, form: dict) -> list[dict[str, Any]]:
         """Scan a form for SQL injection vulnerabilities"""
         findings = []
         action = form.get('action', url)
         method = form.get('method', 'GET').upper()
         inputs = form.get('inputs', {})
-        
+
         if not inputs:
             return findings
-        
+
         for field_name in inputs:
             for payload in self.payloads[:10]:
                 test_data = inputs.copy()
                 test_data[field_name] = payload
-                
+
                 if method == "GET":
                     response = self._make_request(action, params=test_data)
                 else:
                     response = self._make_request(action, method="POST", data=test_data)
-                
+
                 error_result = self._check_error_based(response, payload)
                 if error_result:
                     error_result["parameter"] = field_name
@@ -266,5 +267,5 @@ class SQLiScanner:
                     error_result["method"] = method
                     findings.append(error_result)
                     break
-        
+
         return findings

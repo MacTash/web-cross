@@ -4,17 +4,16 @@ Detects IDOR and privilege escalation vulnerabilities.
 """
 
 import re
-import json
-import hashlib
-from typing import List, Dict, Any, Optional, Tuple
-from urllib.parse import urlparse, urljoin, parse_qs, urlencode
+from typing import Any
+from urllib.parse import parse_qs, urlencode, urljoin, urlparse
+
 import requests
 
 
 class BrokenAccessScanner:
     """
     Broken Access Control vulnerability scanner.
-    
+
     Detects:
     - Insecure Direct Object References (IDOR)
     - Horizontal privilege escalation
@@ -23,7 +22,7 @@ class BrokenAccessScanner:
     - Path-based access bypass
     - HTTP method tampering
     """
-    
+
     # Patterns for identifying resource IDs
     ID_PATTERNS = [
         r'/(\d+)(?:/|$|\?)',           # Numeric IDs in path
@@ -37,7 +36,7 @@ class BrokenAccessScanner:
         r'[?&]file[_]?id=(\d+)',       # fileId parameter
         r'[?&]doc[_]?id=(\d+)',        # docId parameter
     ]
-    
+
     # Common parameter names that might contain object references
     IDOR_PARAMS = [
         "id", "Id", "ID",
@@ -53,7 +52,7 @@ class BrokenAccessScanner:
         "uid", "uuid", "guid",
         "ref", "reference",
     ]
-    
+
     # Sensitive admin/internal endpoints
     ADMIN_ENDPOINTS = [
         "/admin",
@@ -77,7 +76,7 @@ class BrokenAccessScanner:
         "/.git",
         "/.env",
     ]
-    
+
     def __init__(self, timeout: int = 10, user_agent: str = None):
         self.timeout = timeout
         self.user_agent = user_agent or "WebCross-Scanner/3.0"
@@ -85,23 +84,23 @@ class BrokenAccessScanner:
         self.session.headers.update({
             "User-Agent": self.user_agent,
         })
-    
+
     def _make_request(
-        self, 
-        url: str, 
+        self,
+        url: str,
         method: str = "GET",
-        data: Dict = None,
-        headers: Dict = None,
-    ) -> Optional[requests.Response]:
+        data: dict = None,
+        headers: dict = None,
+    ) -> requests.Response | None:
         """Make HTTP request with error handling"""
         try:
             req_headers = dict(self.session.headers)
             if headers:
                 req_headers.update(headers)
-            
+
             return self.session.request(
                 method.upper(),
-                url, 
+                url,
                 data=data,
                 timeout=self.timeout,
                 headers=req_headers,
@@ -110,11 +109,11 @@ class BrokenAccessScanner:
             )
         except requests.RequestException:
             return None
-    
-    def _extract_ids_from_url(self, url: str) -> List[Dict[str, Any]]:
+
+    def _extract_ids_from_url(self, url: str) -> list[dict[str, Any]]:
         """Extract potential object IDs from URL"""
         ids = []
-        
+
         for pattern in self.ID_PATTERNS:
             matches = re.findall(pattern, url, re.IGNORECASE)
             for match in matches:
@@ -124,11 +123,11 @@ class BrokenAccessScanner:
                     "pattern": pattern,
                 }
                 ids.append(id_info)
-        
+
         # Also check query parameters
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         for param_name in self.IDOR_PARAMS:
             if param_name in params:
                 for value in params[param_name]:
@@ -137,13 +136,13 @@ class BrokenAccessScanner:
                         "type": "numeric" if value.isdigit() else "string",
                         "param": param_name,
                     })
-        
+
         return ids
-    
-    def _generate_test_ids(self, original_id: str) -> List[str]:
+
+    def _generate_test_ids(self, original_id: str) -> list[str]:
         """Generate test IDs to check for IDOR"""
         test_ids = []
-        
+
         if original_id.isdigit():
             # Numeric ID - try adjacent values
             id_int = int(original_id)
@@ -178,14 +177,14 @@ class BrokenAccessScanner:
                 "test",
                 "1",
             ])
-        
+
         return test_ids
-    
+
     def _compare_responses(
-        self, 
-        original: requests.Response, 
+        self,
+        original: requests.Response,
         test: requests.Response,
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """Compare two responses to detect IDOR"""
         # If status codes differ significantly, might not be IDOR
         if original.status_code != test.status_code:
@@ -193,21 +192,21 @@ class BrokenAccessScanner:
                 return False, "Access denied"
             if test.status_code == 404:
                 return False, "Not found"
-        
+
         # If test request got data that original didn't, that's suspicious
         if test.status_code == 200 and original.status_code != 200:
             return True, "Different status codes suggest unauthorized access"
-        
+
         # Compare content length differences
         orig_len = len(original.content)
         test_len = len(test.content)
-        
+
         if orig_len > 0 and test_len > 0:
             len_diff = abs(orig_len - test_len)
             # If content differs significantly, data might be different
             if len_diff > 100 and test.status_code == 200:
                 return True, f"Content length differs by {len_diff} bytes"
-        
+
         # Check for sensitive data indicators in response
         sensitive_patterns = [
             r'"email"\s*:\s*"[^"]+@[^"]+"',
@@ -219,34 +218,34 @@ class BrokenAccessScanner:
             r'"token"\s*:',
             r'"api_key"\s*:',
         ]
-        
+
         for pattern in sensitive_patterns:
             if re.search(pattern, test.text, re.IGNORECASE):
                 if not re.search(pattern, original.text, re.IGNORECASE):
                     return True, f"Sensitive data pattern found: {pattern}"
-        
+
         return False, "No significant difference"
-    
-    def _test_idor_url(self, url: str) -> List[Dict[str, Any]]:
+
+    def _test_idor_url(self, url: str) -> list[dict[str, Any]]:
         """Test a URL for IDOR vulnerabilities"""
         findings = []
-        
+
         # Get original response
         original_response = self._make_request(url)
         if not original_response:
             return findings
-        
+
         # Extract IDs from URL
         ids = self._extract_ids_from_url(url)
-        
+
         for id_info in ids:
             original_id = id_info["value"]
             test_ids = self._generate_test_ids(original_id)
-            
+
             for test_id in test_ids:
                 if test_id == original_id:
                     continue
-                
+
                 # Build test URL
                 if "param" in id_info:
                     # It's a query parameter
@@ -257,16 +256,16 @@ class BrokenAccessScanner:
                 else:
                     # It's in the path
                     test_url = url.replace(original_id, test_id)
-                
+
                 test_response = self._make_request(test_url)
                 if not test_response:
                     continue
-                
+
                 is_vulnerable, reason = self._compare_responses(
-                    original_response, 
+                    original_response,
                     test_response,
                 )
-                
+
                 if is_vulnerable:
                     findings.append({
                         "type": "BROKEN_ACCESS_CONTROL",
@@ -294,22 +293,22 @@ class BrokenAccessScanner:
                         "cwe": "CWE-639",
                     })
                     break  # One finding per ID is enough
-        
+
         return findings
-    
-    def _test_admin_endpoints(self, base_url: str) -> List[Dict[str, Any]]:
+
+    def _test_admin_endpoints(self, base_url: str) -> list[dict[str, Any]]:
         """Test for accessible admin endpoints"""
         findings = []
         parsed = urlparse(base_url)
         base = f"{parsed.scheme}://{parsed.netloc}"
-        
+
         for endpoint in self.ADMIN_ENDPOINTS:
             url = urljoin(base, endpoint)
             response = self._make_request(url)
-            
+
             if not response:
                 continue
-            
+
             if response.status_code == 200:
                 # Check if it's actually admin content
                 content_lower = response.text.lower()
@@ -317,9 +316,9 @@ class BrokenAccessScanner:
                     "admin", "dashboard", "control panel", "management",
                     "configuration", "settings", "users", "system",
                 ]
-                
+
                 is_admin_page = any(ind in content_lower for ind in admin_indicators)
-                
+
                 if is_admin_page:
                     findings.append({
                         "type": "BROKEN_ACCESS_CONTROL",
@@ -342,22 +341,22 @@ class BrokenAccessScanner:
                         "owasp": "A01:2021",
                         "cwe": "CWE-306",
                     })
-        
+
         return findings
-    
-    def _test_method_tampering(self, url: str) -> List[Dict[str, Any]]:
+
+    def _test_method_tampering(self, url: str) -> list[dict[str, Any]]:
         """Test for HTTP method tampering bypasses"""
         findings = []
-        
+
         # First, check if resource is protected
         get_response = self._make_request(url, method="GET")
         if not get_response:
             return findings
-        
+
         # If GET is forbidden, try other methods
         if get_response.status_code in (401, 403):
             methods = ["POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
-            
+
             for method in methods:
                 response = self._make_request(url, method=method)
                 if response and response.status_code == 200:
@@ -384,15 +383,15 @@ class BrokenAccessScanner:
                         "cwe": "CWE-650",
                     })
                     break
-        
+
         return findings
-    
-    def _test_path_traversal_bypass(self, url: str) -> List[Dict[str, Any]]:
+
+    def _test_path_traversal_bypass(self, url: str) -> list[dict[str, Any]]:
         """Test for path-based access control bypass"""
         findings = []
-        
+
         parsed = urlparse(url)
-        
+
         # Try path manipulation bypasses
         bypasses = [
             ("/..", "parent_directory"),
@@ -402,16 +401,16 @@ class BrokenAccessScanner:
             ("/%2e%2e/", "encoded_parent"),
             ("/.;/", "dot_semicolon"),
         ]
-        
+
         for bypass, technique in bypasses:
             # Insert bypass in path
             if parsed.path and len(parsed.path) > 1:
                 test_path = bypass + parsed.path
                 test_url = f"{parsed.scheme}://{parsed.netloc}{test_path}"
-                
+
                 if parsed.query:
                     test_url += f"?{parsed.query}"
-                
+
                 response = self._make_request(test_url)
                 if response and response.status_code == 200:
                     # Compare with original
@@ -438,104 +437,104 @@ class BrokenAccessScanner:
                             "cwe": "CWE-22",
                         })
                         break
-        
+
         return findings
-    
-    def scan_url(self, url: str) -> List[Dict[str, Any]]:
+
+    def scan_url(self, url: str) -> list[dict[str, Any]]:
         """
         Scan a URL for broken access control vulnerabilities.
-        
+
         Args:
             url: Target URL to scan
-        
+
         Returns:
             List of vulnerability findings
         """
         findings = []
-        
+
         # Test for IDOR
         findings.extend(self._test_idor_url(url))
-        
+
         # Test for method tampering
         findings.extend(self._test_method_tampering(url))
-        
+
         # Test for path bypass
         findings.extend(self._test_path_traversal_bypass(url))
-        
+
         return findings
-    
-    def scan_all(self, base_url: str) -> List[Dict[str, Any]]:
+
+    def scan_all(self, base_url: str) -> list[dict[str, Any]]:
         """
         Comprehensive broken access control scan.
-        
+
         Args:
             base_url: Base URL to scan
-        
+
         Returns:
             List of vulnerability findings
         """
         findings = []
-        
+
         # Scan base URL for IDOR
         findings.extend(self.scan_url(base_url))
-        
+
         # Test admin endpoints
         findings.extend(self._test_admin_endpoints(base_url))
-        
+
         return findings
-    
+
     def test_idor_api(
         self,
         url: str,
         parameter: str,
-        test_values: List[str] = None,
+        test_values: list[str] = None,
         method: str = "GET",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Test specific API endpoint for IDOR.
-        
+
         Args:
             url: API endpoint URL
             parameter: Parameter containing the object reference
             test_values: List of IDs to test
             method: HTTP method
-        
+
         Returns:
             List of vulnerability findings
         """
         findings = []
-        
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
-        
+
         if parameter not in params:
             return findings
-        
+
         original_id = params[parameter][0]
         original_response = self._make_request(url, method=method)
-        
+
         if not original_response:
             return findings
-        
+
         test_ids = test_values or self._generate_test_ids(original_id)
-        
+
         for test_id in test_ids:
             if test_id == original_id:
                 continue
-            
+
             test_params = dict(params)
             test_params[parameter] = [test_id]
             test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(test_params, doseq=True)}"
-            
+
             test_response = self._make_request(test_url, method=method)
             if not test_response:
                 continue
-            
+
             is_vulnerable, reason = self._compare_responses(
-                original_response, 
+                original_response,
                 test_response,
             )
-            
+
             if is_vulnerable:
                 findings.append({
                     "type": "BROKEN_ACCESS_CONTROL",
@@ -561,7 +560,7 @@ class BrokenAccessScanner:
                     "owasp": "A01:2021",
                     "cwe": "CWE-639",
                 })
-        
+
         return findings
 
 

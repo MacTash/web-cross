@@ -3,11 +3,10 @@ GraphQL Security Scanner Module for Web-Cross
 Detects GraphQL-specific vulnerabilities: introspection, batching, depth attacks.
 """
 
-import re
-import json
-import requests
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
+from typing import Any
+
+import requests
 
 
 @dataclass
@@ -22,7 +21,7 @@ class GraphQLFinding:
 class GraphQLScanner:
     """
     GraphQL Security Scanner.
-    
+
     Detects:
     - Introspection enabled
     - Batching attacks
@@ -30,7 +29,7 @@ class GraphQLScanner:
     - Field suggestions (info disclosure)
     - Aliases for DoS
     """
-    
+
     INTROSPECTION_QUERY = """
     query IntrospectionQuery {
         __schema {
@@ -40,7 +39,7 @@ class GraphQLScanner:
         }
     }
     """
-    
+
     DEPTH_QUERY = """
     query DepthTest {
         users {
@@ -56,13 +55,13 @@ class GraphQLScanner:
         }
     }
     """
-    
+
     BATCH_QUERY = [
         {"query": "query { __typename }"},
         {"query": "query { __typename }"},
         {"query": "query { __typename }"},
     ]
-    
+
     ALIAS_DOS_QUERY = """
     query AliasDoS {
         a1: __typename
@@ -77,22 +76,22 @@ class GraphQLScanner:
         a10: __typename
     }
     """
-    
+
     def __init__(self, timeout: int = 10):
         self.timeout = timeout
-        self.findings: List[GraphQLFinding] = []
-    
-    def detect_graphql_endpoint(self, base_url: str) -> Optional[str]:
+        self.findings: list[GraphQLFinding] = []
+
+    def detect_graphql_endpoint(self, base_url: str) -> str | None:
         """Try common GraphQL endpoints."""
         endpoints = [
             "/graphql",
-            "/api/graphql", 
+            "/api/graphql",
             "/graphql/v1",
             "/v1/graphql",
             "/query",
             "/gql",
         ]
-        
+
         for endpoint in endpoints:
             url = base_url.rstrip("/") + endpoint
             try:
@@ -108,14 +107,14 @@ class GraphQLScanner:
                         data = resp.json()
                         if "data" in data or "errors" in data:
                             return url
-                    except:
+                    except Exception:
                         pass
-            except:
+            except Exception:
                 continue
-        
+
         return None
-    
-    def test_introspection(self, url: str) -> Optional[GraphQLFinding]:
+
+    def test_introspection(self, url: str) -> GraphQLFinding | None:
         """Test if introspection is enabled."""
         try:
             resp = requests.post(
@@ -124,25 +123,25 @@ class GraphQLScanner:
                 headers={"Content-Type": "application/json"},
                 timeout=self.timeout
             )
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 if "data" in data and data["data"].get("__schema"):
                     schema = data["data"]["__schema"]
                     types_count = len(schema.get("types", []))
-                    
+
                     return GraphQLFinding(
                         vuln_type="GRAPHQL_INTROSPECTION",
                         severity="Medium",
                         evidence=f"Introspection enabled. Found {types_count} types.",
                         recommendation="Disable introspection in production."
                     )
-        except Exception as e:
+        except Exception:
             pass
-        
+
         return None
-    
-    def test_batching(self, url: str) -> Optional[GraphQLFinding]:
+
+    def test_batching(self, url: str) -> GraphQLFinding | None:
         """Test if query batching is allowed."""
         try:
             resp = requests.post(
@@ -151,7 +150,7 @@ class GraphQLScanner:
                 headers={"Content-Type": "application/json"},
                 timeout=self.timeout
             )
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 if isinstance(data, list) and len(data) == 3:
@@ -161,12 +160,12 @@ class GraphQLScanner:
                         evidence="Query batching enabled. DoS risk via batch amplification.",
                         recommendation="Limit batch query count or disable batching."
                     )
-        except:
+        except Exception:
             pass
-        
+
         return None
-    
-    def test_field_suggestions(self, url: str) -> Optional[GraphQLFinding]:
+
+    def test_field_suggestions(self, url: str) -> GraphQLFinding | None:
         """Test if field suggestions leak schema info."""
         try:
             resp = requests.post(
@@ -175,7 +174,7 @@ class GraphQLScanner:
                 headers={"Content-Type": "application/json"},
                 timeout=self.timeout
             )
-            
+
             if resp.status_code == 200:
                 data = resp.json()
                 errors = data.get("errors", [])
@@ -188,12 +187,12 @@ class GraphQLScanner:
                             evidence=f"Field suggestions enabled: {msg[:100]}",
                             recommendation="Disable field suggestions in production."
                         )
-        except:
+        except Exception:
             pass
-        
+
         return None
-    
-    def test_depth_limit(self, url: str) -> Optional[GraphQLFinding]:
+
+    def test_depth_limit(self, url: str) -> GraphQLFinding | None:
         """Test if query depth is limited."""
         try:
             resp = requests.post(
@@ -202,7 +201,7 @@ class GraphQLScanner:
                 headers={"Content-Type": "application/json"},
                 timeout=self.timeout
             )
-            
+
             # If query succeeds or no depth error, it's vulnerable
             if resp.status_code == 200:
                 data = resp.json()
@@ -211,7 +210,7 @@ class GraphQLScanner:
                     "depth" in str(e).lower() or "complexity" in str(e).lower()
                     for e in errors
                 )
-                
+
                 if not depth_limited and "data" in data:
                     return GraphQLFinding(
                         vuln_type="GRAPHQL_NO_DEPTH_LIMIT",
@@ -219,20 +218,20 @@ class GraphQLScanner:
                         evidence="No query depth limit detected. DoS risk.",
                         recommendation="Implement query depth limiting."
                     )
-        except:
+        except Exception:
             pass
-        
+
         return None
-    
-    def scan(self, base_url: str) -> List[Dict[str, Any]]:
+
+    def scan(self, base_url: str) -> list[dict[str, Any]]:
         """Run full GraphQL security scan."""
         self.findings = []
-        
+
         # Find GraphQL endpoint
         endpoint = self.detect_graphql_endpoint(base_url)
         if not endpoint:
             return []
-        
+
         # Run tests
         tests = [
             self.test_introspection,
@@ -240,12 +239,12 @@ class GraphQLScanner:
             self.test_field_suggestions,
             self.test_depth_limit,
         ]
-        
+
         for test in tests:
             finding = test(endpoint)
             if finding:
                 self.findings.append(finding)
-        
+
         return [
             {
                 "type": f.vuln_type,
@@ -259,7 +258,7 @@ class GraphQLScanner:
 
 
 # Singleton
-_scanner: Optional[GraphQLScanner] = None
+_scanner: GraphQLScanner | None = None
 
 
 def get_scanner() -> GraphQLScanner:

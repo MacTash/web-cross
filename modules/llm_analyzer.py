@@ -3,13 +3,13 @@ LLM Analyzer Module for Web-Cross Scanner
 Uses Ollama with Llama 3.2:3b for AI-powered vulnerability detection.
 """
 
+import json
 import os
 import re
-import json
-import requests
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
+from typing import Any
 
+import requests
 
 # Configuration
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
@@ -19,23 +19,23 @@ MODEL_NAME = os.getenv("WEBCROSS_MODEL", "llama3.2:3b")
 @dataclass
 class AnalysisResult:
     """Result from LLM analysis."""
-    vulnerabilities: List[Dict[str, Any]]
+    vulnerabilities: list[dict[str, Any]]
     confidence: float
     reasoning: str
-    recommendations: List[str]
+    recommendations: list[str]
 
 
 class LLMAnalyzer:
     """
     AI-powered vulnerability analyzer using Ollama + Llama 3.2.
-    
+
     Provides intelligent analysis beyond pattern matching:
     - Context-aware vulnerability detection
     - Smart payload generation
     - Response interpretation
     - Risk prioritization
     """
-    
+
     def __init__(
         self,
         host: str = None,
@@ -46,12 +46,12 @@ class LLMAnalyzer:
         self.model = model or MODEL_NAME
         self.timeout = timeout
         self._available = None
-    
+
     def is_available(self) -> bool:
         """Check if Ollama is running and model is available."""
         if self._available is not None:
             return self._available
-        
+
         try:
             resp = requests.get(f"{self.host}/api/tags", timeout=5)
             if resp.status_code == 200:
@@ -69,13 +69,13 @@ class LLMAnalyzer:
         except Exception as e:
             print(f"⚠️ Ollama not reachable at {self.host}: {e}")
             self._available = False
-        
+
         return False
-    
+
     def _generate(self, prompt: str, json_format: bool = False) -> str:
         """Generate text from Ollama."""
         url = f"{self.host}/api/generate"
-        
+
         payload = {
             "model": self.model,
             "prompt": prompt,
@@ -85,10 +85,10 @@ class LLMAnalyzer:
                 "num_predict": 1024,
             }
         }
-        
+
         if json_format:
             payload["format"] = "json"
-        
+
         try:
             resp = requests.post(url, json=payload, timeout=self.timeout)
             resp.raise_for_status()
@@ -96,32 +96,32 @@ class LLMAnalyzer:
         except Exception as e:
             print(f"⚠️ LLM generation failed: {e}")
             return ""
-    
+
     def analyze_response(
         self,
         response_text: str,
         url: str = "",
-        context: Dict = None,
+        context: dict = None,
     ) -> AnalysisResult:
         """
         Analyze an HTTP response for vulnerabilities.
-        
+
         Args:
             response_text: The HTTP response body
             url: Target URL
             context: Additional context (headers, method, etc.)
-        
+
         Returns:
             AnalysisResult with detected vulnerabilities
         """
         if not self.is_available():
             return self._fallback_analyze(response_text)
-        
+
         context = context or {}
-        
+
         # Truncate response to fit context
         truncated = response_text[:4000]
-        
+
         prompt = f"""You are an expert web security analyst. Analyze this HTTP response for vulnerabilities.
 
 TARGET: {url}
@@ -190,12 +190,12 @@ OUTPUT FORMAT (JSON):
 Return ONLY valid JSON."""
 
         result = self._generate(prompt, json_format=True)
-        
+
         try:
             data = json.loads(result)
             vulns = data.get("vulnerabilities", [])
             recs = data.get("recommendations", [])
-            
+
             return AnalysisResult(
                 vulnerabilities=vulns,
                 confidence=0.8 if vulns else 0.5,
@@ -204,12 +204,12 @@ Return ONLY valid JSON."""
             )
         except json.JSONDecodeError:
             return self._parse_text_response(result)
-    
+
     def _parse_text_response(self, text: str) -> AnalysisResult:
         """Parse non-JSON response into structured format."""
         vulnerabilities = []
         recommendations = []
-        
+
         # Simple extraction for common patterns
         if "XSS" in text.upper() or "CROSS-SITE" in text.upper():
             vulnerabilities.append({
@@ -219,44 +219,44 @@ Return ONLY valid JSON."""
             })
         if "SQL" in text.upper() and ("INJECTION" in text.upper() or "SQLI" in text.upper()):
             vulnerabilities.append({
-                "type": "SQL_INJECTION", 
+                "type": "SQL_INJECTION",
                 "evidence": "Detected in LLM analysis",
                 "severity": "Critical"
             })
         if "CSRF" in text.upper():
             vulnerabilities.append({
                 "type": "CSRF",
-                "evidence": "Detected in LLM analysis", 
+                "evidence": "Detected in LLM analysis",
                 "severity": "Medium"
             })
-        
+
         return AnalysisResult(
             vulnerabilities=vulnerabilities,
             confidence=0.6,
             reasoning=text,
             recommendations=recommendations,
         )
-    
+
     def generate_payloads(
         self,
         vuln_type: str,
         context: str = "",
         waf_info: str = "None detected",
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Generate context-aware payloads using LLM.
-        
+
         Args:
             vuln_type: Type of vulnerability (XSS, SQLi, etc.)
             context: Target context information
             waf_info: Detected WAF information
-        
+
         Returns:
             List of payloads with techniques
         """
         if not self.is_available():
             return self._fallback_payloads(vuln_type)
-        
+
         prompt = f"""You are an expert penetration tester. Generate 7 sophisticated {vuln_type} payloads.
 
 TARGET CONTEXT: {context or 'Modern web application'}
@@ -304,17 +304,17 @@ OUTPUT FORMAT (JSON array):
 Return ONLY the JSON array, no explanation."""
 
         result = self._generate(prompt, json_format=True)
-        
+
         try:
             payloads = json.loads(result)
             if isinstance(payloads, list):
                 return payloads
         except json.JSONDecodeError:
             pass
-        
+
         return self._fallback_payloads(vuln_type)
-    
-    def _fallback_payloads(self, vuln_type: str) -> List[Dict[str, str]]:
+
+    def _fallback_payloads(self, vuln_type: str) -> list[dict[str, str]]:
         """Return basic payloads when LLM unavailable."""
         if vuln_type.upper() == "XSS":
             return [
@@ -329,28 +329,28 @@ Return ONLY the JSON array, no explanation."""
                 {"payload": "' AND SLEEP(5)--", "technique": "time_based"},
             ]
         return []
-    
+
     def assess_risk(
         self,
-        findings: List[Dict],
+        findings: list[dict],
         target: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Provide risk assessment for all findings.
-        
+
         Args:
             findings: List of vulnerability findings
             target: Target URL/application
-        
+
         Returns:
             Risk assessment dictionary
         """
         if not self.is_available() or not findings:
             return self._fallback_risk(findings)
-        
+
         # Format findings for prompt
         findings_str = json.dumps(findings[:20], indent=2)[:3000]
-        
+
         prompt = f"""Analyze these security scan findings for {target}:
 
 {findings_str}
@@ -364,21 +364,21 @@ Return a JSON object with:
 Return ONLY valid JSON."""
 
         result = self._generate(prompt, json_format=True)
-        
+
         try:
             return json.loads(result)
         except json.JSONDecodeError:
             return self._fallback_risk(findings)
-    
-    def _fallback_risk(self, findings: List[Dict]) -> Dict[str, Any]:
+
+    def _fallback_risk(self, findings: list[dict]) -> dict[str, Any]:
         """Fallback risk assessment."""
         if not findings:
             return {"risk_level": "Low", "summary": "No vulnerabilities detected"}
-        
+
         # Calculate based on findings
         critical = sum(1 for f in findings if f.get("severity") == "Critical" or f.get("risk_score", 0) >= 9)
         high = sum(1 for f in findings if f.get("severity") == "High" or 7 <= f.get("risk_score", 0) < 9)
-        
+
         if critical > 0:
             level = "Critical"
         elif high > 0:
@@ -387,33 +387,33 @@ Return ONLY valid JSON."""
             level = "Medium"
         else:
             level = "Low"
-        
+
         return {
             "risk_level": level,
             "summary": f"Found {len(findings)} issues ({critical} critical, {high} high)",
             "priority_fixes": ["Address critical vulnerabilities first"],
         }
-    
+
     def _fallback_analyze(self, response_text: str) -> AnalysisResult:
         """
         Fallback pattern-based analysis when Ollama unavailable.
         """
         findings = []
-        
+
         # XSS patterns
         xss_patterns = [
             (r"<script[^>]*>", "Script tag in response"),
             (r"javascript:", "JavaScript URL scheme"),
             (r"on\w+\s*=", "Event handler attribute"),
         ]
-        
+
         # SQLi patterns
         sqli_patterns = [
             (r"(mysql|sql|ora|postgres).*error", "Database error exposed"),
             (r"syntax.*error", "SQL syntax error"),
             (r"warning.*mysql", "MySQL warning"),
         ]
-        
+
         for pattern, desc in xss_patterns:
             if re.search(pattern, response_text, re.IGNORECASE):
                 findings.append({
@@ -421,7 +421,7 @@ Return ONLY valid JSON."""
                     "evidence": desc,
                     "severity": "Medium",
                 })
-        
+
         for pattern, desc in sqli_patterns:
             if re.search(pattern, response_text, re.IGNORECASE):
                 findings.append({
@@ -429,7 +429,7 @@ Return ONLY valid JSON."""
                     "evidence": desc,
                     "severity": "High",
                 })
-        
+
         return AnalysisResult(
             vulnerabilities=findings,
             confidence=0.5,
@@ -439,7 +439,7 @@ Return ONLY valid JSON."""
 
 
 # Singleton instance
-_analyzer: Optional[LLMAnalyzer] = None
+_analyzer: LLMAnalyzer | None = None
 
 
 def get_analyzer() -> LLMAnalyzer:
