@@ -76,19 +76,23 @@ class TestDeserializationScanner:
         from modules.deserialization import DeserializationScanner
         scanner = DeserializationScanner()
 
-        # Use correct method name: _detect_viewstate
-        result = scanner._detect_viewstate(
-            '<input name="__VIEWSTATE" value="abc123" />'
-        )
-        assert result is not None
+        # Create a mock response object
+        mock_response = Mock()
+        mock_response.text = '<input name="__VIEWSTATE" value="abc123" />'
+        mock_response.url = "http://example.com"
+
+        result = scanner._detect_viewstate(mock_response)
+        # Result is a list of findings
+        assert isinstance(result, list)
 
     def test_signatures_defined(self):
         """Test serialization signatures are defined"""
         from modules.deserialization import DeserializationScanner
         scanner = DeserializationScanner()
 
-        assert len(scanner.PHP_SIGNATURES) > 0
-        assert len(scanner.JAVA_SIGNATURES) > 0
+        # Correct attribute names: PHP_PATTERNS, JAVA_SERIAL_PATTERNS
+        assert len(scanner.PHP_PATTERNS) > 0
+        assert len(scanner.JAVA_SERIAL_PATTERNS) > 0
 
 
 class TestRateLimitingScanner:

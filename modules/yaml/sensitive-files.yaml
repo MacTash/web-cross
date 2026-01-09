@@ -1,0 +1,54 @@
+id: sensitive-files-exposure
+info:
+  name: Sensitive Files Exposure
+  author: webcross
+  severity: high
+  description: Detects exposed sensitive configuration and environment files
+  tags:
+    - exposure
+    - config
+    - sensitive
+    - env
+
+type: http
+
+http:
+  method: GET
+  paths:
+    - "{{BaseURL}}/.env"
+    - "{{BaseURL}}/.env.local"
+    - "{{BaseURL}}/.env.production"
+    - "{{BaseURL}}/.env.development"
+    - "{{BaseURL}}/config.php"
+    - "{{BaseURL}}/config.json"
+    - "{{BaseURL}}/config.yml"
+    - "{{BaseURL}}/settings.json"
+    - "{{BaseURL}}/credentials.json"
+    - "{{BaseURL}}/secrets.json"
+    - "{{BaseURL}}/.htpasswd"
+    - "{{BaseURL}}/.htaccess"
+    - "{{BaseURL}}/web.config"
+    - "{{BaseURL}}/phpinfo.php"
+    - "{{BaseURL}}/info.php"
+    - "{{BaseURL}}/debug.php"
+  
+  threads: 10
+  
+  matchers:
+    - type: status
+      status:
+        - 200
+    
+    - type: word
+      part: body
+      words:
+        - "DB_PASSWORD"
+        - "API_KEY"
+        - "SECRET_KEY"
+        - "AWS_ACCESS"
+        - "MYSQL_PASSWORD"
+        - "APP_SECRET"
+        - "phpinfo()"
+        - "password"
+        - "api_secret"
+      condition: or

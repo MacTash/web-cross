@@ -1,0 +1,44 @@
+id: exposed-git-directory
+info:
+  name: Exposed Git Directory
+  author: webcross
+  severity: high
+  description: Detects exposed .git directories that may leak source code
+  tags:
+    - exposure
+    - git
+    - sensitive
+
+type: http
+
+http:
+  method: GET
+  paths:
+    - "{{BaseURL}}/.git/config"
+    - "{{BaseURL}}/.git/HEAD"
+    - "{{BaseURL}}/.git/index"
+    - "{{BaseURL}}/.git/COMMIT_EDITMSG"
+    - "{{BaseURL}}/.gitignore"
+  
+  threads: 5
+  
+  matchers:
+    - type: word
+      part: body
+      words:
+        - "[core]"
+        - "ref: refs/"
+        - "repositoryformatversion"
+      condition: or
+    
+    - type: status
+      status:
+        - 200
+  
+  extractors:
+    - type: regex
+      name: git_config
+      part: body
+      regex:
+        - 'url\s*=\s*(.+)'
+      group: 1

@@ -380,7 +380,7 @@ def display_results(findings: list[dict], technologies: list[dict] = None) -> No
     table.add_column("Type", style="cyan", width=25)
     table.add_column("Risk", width=8)
     table.add_column("URL/Parameter", width=40)
-    table.add_column("Evidence", width=40)
+    table.add_column("Evidence", overflow="fold")
 
     for finding in findings[:25]:
         risk_score = finding.get('risk_score', 0)
@@ -403,7 +403,7 @@ def display_results(findings: list[dict], technologies: list[dict] = None) -> No
             finding.get('type', 'N/A')[:25],
             f"{risk_style}{risk_score}[/]",
             url_info,
-            evidence[:35] + '...' if len(evidence) > 35 else evidence
+            evidence
         )
 
     console.print(table)

@@ -44,6 +44,12 @@ from .websocket_scanner import get_scanner as get_websocket_scanner
 from .xss import XSSScanner
 from .xxe import XXEScanner
 
+# 2026 v3.1 Sif-ported Scanners
+from .cloud_storage import CloudStorageScanner
+from .cloud_storage import get_scanner as get_cloud_storage_scanner
+from .supabase import SupabaseScanner
+from .supabase import get_scanner as get_supabase_scanner
+
 __all__ = [
     # Core
     'SQLiScanner',
@@ -84,4 +90,10 @@ __all__ = [
     'get_subdomain_takeover_scanner',
     'BrokenAccessScanner',
     'get_broken_access_scanner',
+    # 2026 v3.1 Sif-ported
+    'CloudStorageScanner',
+    'get_cloud_storage_scanner',
+    'SupabaseScanner',
+    'get_supabase_scanner',
 ]
+

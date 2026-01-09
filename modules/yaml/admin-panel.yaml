@@ -1,0 +1,42 @@
+id: admin-panel-detection
+info:
+  name: Admin Panel Detection
+  author: webcross
+  severity: info
+  description: Detects common admin panel endpoints
+  tags:
+    - recon
+    - admin
+    - discovery
+
+type: http
+
+http:
+  method: GET
+  paths:
+    - "{{BaseURL}}/admin"
+    - "{{BaseURL}}/admin/"
+    - "{{BaseURL}}/administrator"
+    - "{{BaseURL}}/admin.php"
+    - "{{BaseURL}}/wp-admin"
+    - "{{BaseURL}}/wp-login.php"
+    - "{{BaseURL}}/admin/login"
+    - "{{BaseURL}}/adminpanel"
+    - "{{BaseURL}}/cpanel"
+    - "{{BaseURL}}/dashboard"
+    - "{{BaseURL}}/panel"
+    - "{{BaseURL}}/manager"
+    - "{{BaseURL}}/backend"
+    - "{{BaseURL}}/controlpanel"
+    - "{{BaseURL}}/sysadmin"
+  
+  threads: 10
+  
+  matchers:
+    - type: status
+      status:
+        - 200
+        - 301
+        - 302
+        - 401
+        - 403

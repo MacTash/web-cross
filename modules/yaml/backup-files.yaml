@@ -1,0 +1,48 @@
+id: backup-files-detection
+info:
+  name: Backup Files Detection
+  author: webcross
+  severity: medium
+  description: Detects common backup file extensions that may expose sensitive data
+  tags:
+    - exposure
+    - backup
+    - sensitive
+
+type: http
+
+http:
+  method: GET
+  paths:
+    - "{{BaseURL}}/backup.sql"
+    - "{{BaseURL}}/backup.zip"
+    - "{{BaseURL}}/backup.tar.gz"
+    - "{{BaseURL}}/database.sql"
+    - "{{BaseURL}}/db.sql"
+    - "{{BaseURL}}/dump.sql"
+    - "{{BaseURL}}/site.zip"
+    - "{{BaseURL}}/www.zip"
+    - "{{BaseURL}}/web.zip"
+    - "{{BaseURL}}/config.bak"
+    - "{{BaseURL}}/config.old"
+    - "{{BaseURL}}/.env.backup"
+    - "{{BaseURL}}/.env.bak"
+    - "{{BaseURL}}/wp-config.php.bak"
+    - "{{BaseURL}}/settings.php.bak"
+  
+  threads: 10
+  
+  matchers:
+    - type: status
+      status:
+        - 200
+    
+    - type: word
+      part: header
+      words:
+        - "application/zip"
+        - "application/x-gzip"
+        - "application/sql"
+        - "application/octet-stream"
+      condition: or
+      negative: false
